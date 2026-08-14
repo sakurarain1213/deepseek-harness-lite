@@ -20,20 +20,22 @@
 
 DeepSeek Harness Lite keeps the official Harness agent loop, session model, tool registry, and LLM interfaces. It adds a smaller installation profile, removable capability packs, repository-owned plugins, and reproducible compatibility evidence. It is an independent repository, not a GitHub fork and not a replacement runtime.
 
-## What Lite changes
+## What you are running
 
-| Area | Lite behavior |
+| Question | Answer |
 | --- | --- |
-| Runtime core | Uses official public DeepSeek Harness packages without copying or patching upstream source |
-| Default profile | Installs the text-only `chat-only` closure |
-| Optional capability | Adds exact dependency and Cordis rows through removable packs |
-| Plugins | Activates only explicitly selected or pack-contributed Lite plugins |
-| Compatibility | Pins one verified upstream package set and keeps latest-upstream observation separate |
-| Publication | Builds immutable profiles and switches `current.json` only after validation |
+| Interface | Command-line interface (CLI) |
+| Interaction | One task per `run` command; the answer is printed to stdout and the process exits |
+| GUI or desktop app | No |
+| Interactive chat/REPL | No |
+| Supported systems | Windows, macOS, and Linux |
+| Current distribution | Source checkout; no npm package, Windows `.exe`, or macOS app yet |
 
-## Install
+Lite is for users who want a small, inspectable Harness runtime in a terminal or script. It is not currently a graphical chat client.
 
-Requirements: Git, Node.js `^22.19.0` or `>=24`, and Corepack. PowerShell 7 (`pwsh`) is required only when the `shell` pack is enabled on Windows. v0.1.0 runs from a repository checkout and is not published to npm.
+## Quick start
+
+Requirements: Git, Node.js `^22.19.0` or `>=24`, and Corepack. The first `init` downloads and validates the exact platform-specific runtime closure, so it may take a few minutes. PowerShell 7 (`pwsh`) is needed on Windows only when the `shell` pack is enabled.
 
 ### Windows PowerShell
 
@@ -44,10 +46,9 @@ corepack pnpm@10.15.0 install --frozen-lockfile
 corepack pnpm@10.15.0 build
 node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
 node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
 ```
 
-### macOS
+### macOS or Linux
 
 ```sh
 git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
@@ -56,42 +57,130 @@ corepack pnpm@10.15.0 install --frozen-lockfile
 corepack pnpm@10.15.0 build
 node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
 node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
 ```
 
-### Linux
+`init` should print `initialized ...`. `doctor` should return JSON with `"status": "ok"` and every check set to `pass`. Neither command needs a model key.
 
-```sh
-git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
-cd deepseek-harness-lite
-corepack pnpm@10.15.0 install --frozen-lockfile
-corepack pnpm@10.15.0 build
-node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
-```
+<p align="center">
+  <img src="assets/quick-start.png" alt="DeepSeek Harness Lite Quick Start terminal example" width="900">
+</p>
 
-`doctor` and `inspect` are keyless. For a real model turn, pass credentials through the current process environment only.
+<p align="center"><em>Example terminal output from the verified flow; paths are shortened and no real credential is shown.</em></p>
+
+### Run the first model task
+
+Set credentials only in the current terminal process. This example uses the official API URL and its common chat model; for another OpenAI-compatible endpoint, use a model name that endpoint actually supports.
 
 Windows PowerShell:
 
 ```powershell
 $env:DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 $env:DEEPSEEK_API_KEY = "<your-key>"
-$env:DEEPSEEK_MODEL = "deepseek-v4-flash"
-node apps/cli/dist/src/bin.js run "Reply with: ready" --home .dsh-lite-home
+$env:DEEPSEEK_MODEL = "deepseek-chat"
+node apps/cli/dist/src/bin.js run "Reply with exactly: ready" --home .dsh-lite-home
 ```
 
 macOS/Linux:
 
 ```sh
-DEEPSEEK_BASE_URL='https://api.deepseek.com/v1' \
-DEEPSEEK_API_KEY='<your-key>' \
-DEEPSEEK_MODEL='deepseek-v4-flash' \
-node apps/cli/dist/src/bin.js run 'Reply with: ready' --home .dsh-lite-home
+export DEEPSEEK_BASE_URL='https://api.deepseek.com/v1'
+export DEEPSEEK_API_KEY='<your-key>'
+export DEEPSEEK_MODEL='deepseek-chat'
+node apps/cli/dist/src/bin.js run 'Reply with exactly: ready' --home .dsh-lite-home
 ```
 
-Never put credentials in `lite.config.json`, generated profiles, fixtures, logs, or commits. `DEEPSEEK_MODEL` defaults to `deepseek-v4-flash`; the base URL and API key have no defaults.
+The expected stdout is the model answer, for example `ready`. `DEEPSEEK_BASE_URL` may be an API root ending in `/v1` or the full `/chat/completions` URL. The code default for `DEEPSEEK_MODEL` is `deepseek-v4-flash`; set the variable explicitly when your endpoint uses a different model name. Never put credentials in `lite.config.json`, generated profiles, fixtures, logs, or commits.
+
+## How to use it
+
+1. Run `init` once for a chosen config and Lite home. It resolves, installs, activates, and validates a complete profile before publishing it.
+2. Run `doctor` after installation or an update. Continue only when all checks pass.
+3. Run `inspect` when you want the exact upstream version, packages, Cordis rows, packs, and plugins in the active profile.
+4. Export endpoint credentials in the current terminal.
+5. Run one quoted task. The CLI prints the final text and exits; invoke it again for another task.
+
+### Command reference
+
+| Command | Purpose | Needs API credentials |
+| --- | --- | --- |
+| `init --config <file> --home <dir>` | Build and atomically publish a profile from a JSON config | No |
+| `doctor --home <dir>` | Validate Node, home, installed closure, runtime activation, and secret hygiene | No |
+| `inspect --home <dir>` | Print the resolved identity, dependency inventory, Cordis rows, packs, and plugins | No |
+| `run "<task>" --home <dir>` | Send one task through the active Harness runtime and print the final answer | Yes |
+
+Paths are resolved from the current working directory. `--home` stores generated runtime state; do not edit files inside it by hand. To change capabilities, edit or select a config and rerun `init` against the same home. Publication switches the active profile only after the replacement passes validation.
+
+### Use the developer profile
+
+The included developer profile enables bounded workspace notes, sanitized session export, and the health plugin:
+
+```sh
+node apps/cli/dist/src/bin.js init --config examples/developer/lite.config.json --home .dsh-lite-home
+node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
+```
+
+For a custom selection, create a config like this and run `init` with its path:
+
+```json
+{
+  "schemaVersion": 1,
+  "upstream": { "channel": "stable", "version": "0.1.0-rc.6" },
+  "profile": "custom",
+  "packs": ["workspace", "research"],
+  "plugins": ["health"]
+}
+```
+
+Pack-contributed plugins are added automatically. Do not also list the same plugin in `plugins`; duplicate activation is rejected. Review the capability table below before enabling `shell` or network access.
+
+### Run against another project directory
+
+The current directory becomes the workspace seen by workspace-aware Lite plugins. Keep the CLI and generated home in the cloned Lite repository, then call them with absolute paths from your project:
+
+Windows PowerShell:
+
+```powershell
+$LiteRepo = "C:\src\deepseek-harness-lite"
+Set-Location "C:\src\my-project"
+node "$LiteRepo\apps\cli\dist\src\bin.js" run "Summarize this project" --home "$LiteRepo\.dsh-lite-home"
+```
+
+macOS/Linux:
+
+```sh
+LITE_REPO="$HOME/src/deepseek-harness-lite"
+cd "$HOME/src/my-project"
+node "$LITE_REPO/apps/cli/dist/src/bin.js" run 'Summarize this project' --home "$LITE_REPO/.dsh-lite-home"
+```
+
+### Common problems
+
+| Message or symptom | Fix |
+| --- | --- |
+| `Node ^22.19.0 or >=24 is required` | Install a supported Node.js release and rerun `init` |
+| `unable to read generated Lite state` | Check `--home`, then run `init` for that home |
+| `generated profile is not ready` | Do not repair the generated directory manually; rerun `init` |
+| Endpoint or credentials are not configured | Export `DEEPSEEK_BASE_URL` and `DEEPSEEK_API_KEY` in the same terminal that runs the CLI |
+| Model returns HTTP 400/404 | Set `DEEPSEEK_MODEL` to a model supported by that endpoint |
+| Windows `shell` profile fails its probe | Install PowerShell 7 and confirm `pwsh` is on `PATH` |
+
+## Installation format
+
+v0.1.0 intentionally remains source-only. A quick wrapper archive would still require Node.js, pnpm, platform-specific official packages, generated Cordis resources, and native helpers, so labeling it an `.exe` or macOS app would be misleading.
+
+A future binary/installer release must be produced on each native CI platform, preserve dynamic ESM and runtime assets, handle native dependencies, include license/NOTICE material, publish checksums, and pass installed-artifact smoke tests. macOS distribution also requires separate architecture validation plus signing/notarization for a normal end-user experience. Until those gates exist, the GitHub Release source archives and the checkout steps above are the supported installation path.
+
+## What Lite changes
+
+| Area | Lite behavior |
+| --- | --- |
+| Runtime core | Uses official public DeepSeek Harness packages without copying or patching upstream source |
+| Default profile | Installs the text-only `chat-only` closure |
+| Optional capability | Adds exact dependency and Cordis rows through removable packs |
+| Plugins | Activates only explicitly selected or pack-contributed Lite plugins |
+| Compatibility | Pins one verified upstream package set and keeps latest-upstream observation separate |
+| Publication | Builds immutable profiles and switches `current.json` only after validation |
 
 ## Profiles and capability packs
 
@@ -118,6 +207,8 @@ The v0.1.0 `workspace` pack intentionally excludes upstream generic filesystem a
 | `@dsh-lite/plugin-session-export` | Markdown or JSON session projection | Exports an explicit event and field allowlist |
 
 Repository plugins install with the source checkout for static, reviewable imports. Installation does not activate them. A resolved profile mounts only direct selections and contributions from selected packs.
+
+The plugin roadmap favors capabilities with a clear user workflow, public upstream interfaces, narrow authority, deterministic tests, and native Windows/macOS/Linux evidence. The project aims to add more useful plugins over time, but a plugin is bundled or recommended only after its install, build, activation, license, secret, and security-boundary checks pass. External plugins can enter the evidence-based catalog before they are candidates for bundling.
 
 ## Plugin catalog
 
@@ -162,6 +253,8 @@ Compatibility is **best-effort and release-gated**, not permanent:
 - an upstream update requires regenerated closures and locks plus the complete release gates;
 - Lite config and pack schemas remain stable where practical;
 - incompatible upstream changes are handled through migration notes and versioned releases.
+
+The maintenance target is to evaluate each coherent official Harness release promptly and publish a matching Lite patch or minor release after regenerated closures, plugins, runtime behavior, and the complete native CI matrix pass. If an upstream version fails, Lite keeps the last verified stable set and documents the blocker instead of claiming untested compatibility. This is an active best-effort synchronization policy, not a same-day compatibility guarantee.
 
 See [Upstream maintenance](docs/upstream-maintenance.md).
 

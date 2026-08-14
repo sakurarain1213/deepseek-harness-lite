@@ -20,20 +20,22 @@
 
 DeepSeek Harness Lite 保留官方 Harness 的 agent loop、session 模型、工具注册表和 LLM 接口，在此基础上提供更小的安装配置、可移除能力包、仓库自有插件和可复现兼容证据。它是独立仓库，不是 GitHub fork，也不是替代运行时。
 
-## Lite 改变了什么
+## 你实际运行的是什么
 
-| 范围 | Lite 行为 |
+| 问题 | 答案 |
 | --- | --- |
-| 运行时内核 | 使用 DeepSeek Harness 官方公开包，不复制或修改上游源码 |
-| 默认配置 | 安装纯文本 `chat-only` 闭包 |
-| 可选能力 | 通过可移除能力包加入精确依赖和 Cordis rows |
-| 插件 | 只激活显式选择或由能力包贡献的 Lite 插件 |
-| 兼容性 | 固定一套已验证上游包；latest-upstream 仅负责独立观测 |
-| 发布 | 构建不可变 profile，全部验证通过后才切换 `current.json` |
+| 界面 | 命令行界面（CLI） |
+| 交互方式 | 每次 `run` 执行一个任务；答案输出到终端后进程退出 |
+| GUI 或桌面应用 | 没有 |
+| 交互式聊天/REPL | 没有 |
+| 支持系统 | Windows、macOS、Linux |
+| 当前发行方式 | 源码 checkout；暂时没有 npm 包、Windows `.exe` 或 macOS app |
 
-## 安装
+Lite 适合希望在终端或脚本中使用小型、可检查 Harness 运行时的用户。它目前不是图形聊天客户端。
 
-前置要求：Git、Node.js `^22.19.0` 或 `>=24`、Corepack。Windows 只有启用 `shell` 能力包时才需要 PowerShell 7（`pwsh`）。v0.1.0 从仓库 checkout 运行，暂未发布到 npm。
+## Quick Start
+
+前置要求：Git、Node.js `^22.19.0` 或 `>=24`、Corepack。第一次 `init` 会下载并验证当前平台的精确运行时闭包，可能需要几分钟。Windows 只有启用 `shell` 能力包时才需要 PowerShell 7（`pwsh`）。
 
 ### Windows PowerShell
 
@@ -44,10 +46,9 @@ corepack pnpm@10.15.0 install --frozen-lockfile
 corepack pnpm@10.15.0 build
 node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
 node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
 ```
 
-### macOS
+### macOS 或 Linux
 
 ```sh
 git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
@@ -56,42 +57,130 @@ corepack pnpm@10.15.0 install --frozen-lockfile
 corepack pnpm@10.15.0 build
 node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
 node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
 ```
 
-### Linux
+`init` 应输出 `initialized ...`。`doctor` 应返回 JSON，其中 `"status": "ok"`，并且每个检查都是 `pass`。这两个命令都不需要模型密钥。
 
-```sh
-git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
-cd deepseek-harness-lite
-corepack pnpm@10.15.0 install --frozen-lockfile
-corepack pnpm@10.15.0 build
-node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
-```
+<p align="center">
+  <img src="assets/quick-start.png" alt="DeepSeek Harness Lite Quick Start 终端示例" width="900">
+</p>
 
-`doctor` 和 `inspect` 不需要模型凭据。运行真实模型请求时，只通过当前进程环境传入凭据。
+<p align="center"><em>已验证流程的终端示例；路径经过缩短，不显示任何真实凭据。</em></p>
+
+### 执行第一个模型任务
+
+凭据只设置在当前终端进程中。下面使用官方 API 地址和常用聊天模型；如果使用其他 OpenAI-compatible endpoint，请换成该 endpoint 实际支持的模型名。
 
 Windows PowerShell：
 
 ```powershell
 $env:DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 $env:DEEPSEEK_API_KEY = "<your-key>"
-$env:DEEPSEEK_MODEL = "deepseek-v4-flash"
+$env:DEEPSEEK_MODEL = "deepseek-chat"
 node apps/cli/dist/src/bin.js run "只回复：ready" --home .dsh-lite-home
 ```
 
 macOS/Linux：
 
 ```sh
-DEEPSEEK_BASE_URL='https://api.deepseek.com/v1' \
-DEEPSEEK_API_KEY='<your-key>' \
-DEEPSEEK_MODEL='deepseek-v4-flash' \
+export DEEPSEEK_BASE_URL='https://api.deepseek.com/v1'
+export DEEPSEEK_API_KEY='<your-key>'
+export DEEPSEEK_MODEL='deepseek-chat'
 node apps/cli/dist/src/bin.js run '只回复：ready' --home .dsh-lite-home
 ```
 
-不要把凭据写入 `lite.config.json`、生成 profile、fixture、日志或提交记录。`DEEPSEEK_MODEL` 默认为 `deepseek-v4-flash`；base URL 和 API key 没有默认值。
+stdout 应直接显示模型回答，例如 `ready`。`DEEPSEEK_BASE_URL` 可以是以 `/v1` 结尾的 API root，也可以是完整 `/chat/completions` URL。代码中的 `DEEPSEEK_MODEL` 默认值是 `deepseek-v4-flash`；如果 endpoint 使用其他模型名，请显式设置该变量。不要把凭据写入 `lite.config.json`、生成 profile、fixture、日志或提交记录。
+
+## 一步一步使用
+
+1. 针对选定配置和 Lite home 执行一次 `init`。它会解析、安装、激活并验证完整 profile，成功后才发布。
+2. 安装或更新后执行 `doctor`。只有全部检查通过再继续。
+3. 需要确认实际上游版本、包、Cordis rows、能力包和插件时执行 `inspect`。
+4. 在当前终端导出 endpoint 凭据。
+5. 执行一个用引号包住的任务。CLI 打印最终文本后退出；下一个任务再调用一次。
+
+### 命令表
+
+| 命令 | 用途 | 需要 API 凭据 |
+| --- | --- | --- |
+| `init --config <file> --home <dir>` | 根据 JSON 配置构建并原子发布 profile | 否 |
+| `doctor --home <dir>` | 验证 Node、home、已安装闭包、运行时激活和凭据卫生 | 否 |
+| `inspect --home <dir>` | 输出 resolved identity、依赖清单、Cordis rows、能力包和插件 | 否 |
+| `run "<task>" --home <dir>` | 通过当前 Harness 运行时执行一个任务并打印最终回答 | 是 |
+
+路径都相对于当前工作目录解析。`--home` 用于保存生成的运行时状态，不要手动修改其中的文件。需要切换能力时，修改或选择配置，再对同一个 home 重新执行 `init`；只有替代 profile 全部验证成功后才会切换。
+
+### 使用 developer profile
+
+仓库内置的 developer profile 会启用有边界的 workspace notes、脱敏 session export 和 health 插件：
+
+```sh
+node apps/cli/dist/src/bin.js init --config examples/developer/lite.config.json --home .dsh-lite-home
+node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
+```
+
+需要自定义时，可以创建下面的配置，再把文件路径传给 `init`：
+
+```json
+{
+  "schemaVersion": 1,
+  "upstream": { "channel": "stable", "version": "0.1.0-rc.6" },
+  "profile": "custom",
+  "packs": ["workspace", "research"],
+  "plugins": ["health"]
+}
+```
+
+能力包贡献的插件会自动加入。不要在 `plugins` 中重复列出同一个插件，否则会拒绝重复激活。启用 `shell` 或网络访问前，请先阅读下方能力表。
+
+### 在另一个项目目录中使用
+
+当前目录会成为 workspace-aware Lite 插件看到的工作区。CLI 和生成 home 保留在克隆的 Lite 仓库中，然后从你的项目目录用绝对路径调用：
+
+Windows PowerShell：
+
+```powershell
+$LiteRepo = "C:\src\deepseek-harness-lite"
+Set-Location "C:\src\my-project"
+node "$LiteRepo\apps\cli\dist\src\bin.js" run "用三点总结这个项目" --home "$LiteRepo\.dsh-lite-home"
+```
+
+macOS/Linux：
+
+```sh
+LITE_REPO="$HOME/src/deepseek-harness-lite"
+cd "$HOME/src/my-project"
+node "$LITE_REPO/apps/cli/dist/src/bin.js" run '用三点总结这个项目' --home "$LITE_REPO/.dsh-lite-home"
+```
+
+### 常见问题
+
+| 提示或现象 | 处理方法 |
+| --- | --- |
+| `Node ^22.19.0 or >=24 is required` | 安装受支持的 Node.js，再重新执行 `init` |
+| `unable to read generated Lite state` | 检查 `--home`，然后为该 home 执行 `init` |
+| `generated profile is not ready` | 不要手动修生成目录；重新执行 `init` |
+| endpoint 或凭据未配置 | 在运行 CLI 的同一个终端导出 `DEEPSEEK_BASE_URL` 和 `DEEPSEEK_API_KEY` |
+| 模型返回 HTTP 400/404 | 把 `DEEPSEEK_MODEL` 改成该 endpoint 支持的模型 |
+| Windows `shell` profile 的 probe 失败 | 安装 PowerShell 7，并确认 `pwsh` 位于 `PATH` |
+
+## 安装包形式
+
+v0.1.0 有意保持 source-only。一个简单的 wrapper 压缩包仍然依赖 Node.js、pnpm、平台专用官方包、生成的 Cordis 资源和 native helper，因此把它称为 `.exe` 或 macOS app 会误导用户。
+
+未来的二进制/安装器必须在每个原生 CI 平台构建，保留 dynamic ESM 与运行时资源，正确处理 native dependency，包含 license/NOTICE，发布 checksum，并通过安装后 smoke test。macOS 还需要分别验证架构，以及签名/notarization，才能提供正常的终端用户体验。在这些门禁完成前，GitHub Release 的源码归档和上面的 checkout 步骤是受支持的安装方式。
+
+## Lite 改变了什么
+
+| 范围 | Lite 行为 |
+| --- | --- |
+| 运行时内核 | 使用 DeepSeek Harness 官方公开包，不复制或修改上游源码 |
+| 默认配置 | 安装纯文本 `chat-only` 闭包 |
+| 可选能力 | 通过可移除能力包加入精确依赖和 Cordis rows |
+| 插件 | 只激活显式选择或由能力包贡献的 Lite 插件 |
+| 兼容性 | 固定一套已验证上游包；latest-upstream 仅负责独立观测 |
+| 发布 | 构建不可变 profile，全部验证通过后才切换 `current.json` |
 
 ## 配置与能力包
 
@@ -118,6 +207,8 @@ v0.1.0 的 `workspace` 有意排除上游通用文件系统和搜索工具；`re
 | `@dsh-lite/plugin-session-export` | Markdown 或 JSON session 投影 | 只导出明确允许的事件和字段 |
 
 仓库插件会随源码 checkout 安装，以便静态、可审查地 import；安装不等于激活。resolved profile 只挂载直接选择的插件和已选能力包贡献的插件。
+
+插件路线优先选择具有明确用户工作流、使用上游公开接口、权限边界窄、测试确定且能在 Windows/macOS/Linux 原生验证的能力。项目会持续增加有用插件，但只有 install、build、activation、license、secret 和安全边界检查全部通过，插件才会被 bundled 或推荐。外部插件可以先进入证据化 catalog，再评估是否适合内置。
 
 ## 插件目录
 
@@ -162,6 +253,8 @@ v0.1.0 release evidence 和五个 bundled plugin 记录统一绑定到 Lite sour
 - 升级上游必须重新生成 closure/lock 并通过完整 release gates；
 - Lite config 和能力包 schema 在可行范围内保持稳定；
 - 不兼容上游变更通过迁移说明和版本化发布处理。
+
+维护目标是及时评估每个依赖集合一致的官方 Harness 新版本；重新生成 closure 后，只有插件、运行时行为和完整原生 CI matrix 全部通过，才发布对应 Lite patch 或 minor 版本。如果某个上游版本失败，Lite 会保留最后一套已验证 stable 版本并公开阻塞原因，不会声称未经测试的兼容性。这是主动的尽力同步策略，不承诺与上游同日兼容。
 
 详见[上游维护策略](docs/upstream-maintenance.md)。
 
