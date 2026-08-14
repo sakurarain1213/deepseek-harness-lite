@@ -8,6 +8,22 @@ import { describe, expect, it } from 'vitest'
 const execFileAsync = promisify(execFile)
 
 describe('compatibility asset generation', () => {
+  it('checks committed assets with an empty pnpm metadata cache', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-lite-compat-cold-cache-'))
+    try {
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check'], {
+        cwd: resolve('.'),
+        env: {
+          ...process.env,
+          NPM_CONFIG_STORE_DIR: join(root, 'store'),
+          XDG_CACHE_HOME: join(root, 'cache'),
+        },
+      })).resolves.toBeDefined()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  }, 60_000)
+
   it('checks the full committed matrix without mutating it and detects stale files', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-compat-check-'))
     const fixture = join(root, 'compat')

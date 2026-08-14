@@ -146,7 +146,7 @@ try {
           dependencies,
           pnpm: { supportedArchitectures: { os: [platform], cpu: [process.arch] } },
         }, null, 2)}\n`)
-        await execFileAsync('corepack', [`pnpm@${packageManagerVersion}`, 'install', '--ignore-workspace', '--lockfile-only', '--offline', '--ignore-scripts', '--ignore-pnpmfile', '--config.confirmModulesPurge=false'], {
+        await execFileAsync('corepack', [`pnpm@${packageManagerVersion}`, 'install', '--ignore-workspace', '--lockfile-only', '--prefer-offline', '--ignore-scripts', '--ignore-pnpmfile', '--config.confirmModulesPurge=false'], {
           cwd: temporary,
           env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' },
         })
