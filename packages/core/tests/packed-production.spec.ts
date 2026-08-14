@@ -4,16 +4,21 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
+import { resolveCorepackCommand } from '../src/corepack.js'
 
 const execFileAsync = promisify(execFile)
+const pnpm = async (args: string[], cwd: string) => {
+  const command = await resolveCorepackCommand(['pnpm@10.15.0', ...args])
+  return execFileAsync(command.file, command.args, { cwd })
+}
 
 describe('packed Core production surface', () => {
   it('materializes from committed assets without Core dev dependencies', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-packed-core-'))
     const tarball = join(root, 'core.tgz')
-    await execFileAsync('pnpm', ['pack', '--out', tarball], { cwd: resolve('packages/core') })
+    await pnpm(['pack', '--out', tarball], resolve('packages/core'))
     await writeFile(join(root, 'package.json'), `${JSON.stringify({ private: true, type: 'module', dependencies: { '@dsh-lite/core': `file:${tarball}` } }, null, 2)}\n`)
-    await execFileAsync('pnpm', ['install', '--ignore-workspace', '--prod', '--ignore-scripts'], { cwd: root })
+    await pnpm(['install', '--ignore-workspace', '--prod', '--ignore-scripts'], root)
 
     await expect(access(join(root, 'node_modules/@deepseek-ai/dsh-tool-fs'))).rejects.toThrow()
     await expect(readFile(join(root, 'node_modules/@dsh-lite/core/compat/0.1.0-rc.6/closures.json'), 'utf8')).resolves.toContain('darwin-chat-only')

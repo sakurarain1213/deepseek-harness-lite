@@ -9,11 +9,12 @@ describe('workspace notes plugin', () => {
   it('rejects a notes symlink that escapes the workspace', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-notes-'))
     const workspace = join(root, 'workspace')
-    const outside = join(root, 'outside.md')
+    const outside = join(root, process.platform === 'win32' ? 'outside' : 'outside.md')
     await mkdir(join(workspace, '.dsh-lite'), { recursive: true })
-    await writeFile(outside, 'secret')
+    if (process.platform === 'win32') await mkdir(outside)
+    else await writeFile(outside, 'secret')
     const escapedSymlink = join(workspace, '.dsh-lite', 'notes.md')
-    await symlink(outside, escapedSymlink)
+    await symlink(outside, escapedSymlink, process.platform === 'win32' ? 'junction' : 'file')
 
     await expect(resolveNotesPath(workspace, escapedSymlink)).rejects.toThrow('outside workspace')
   })
@@ -36,12 +37,14 @@ describe('workspace notes plugin', () => {
   it('does not follow a target symlink while publishing a write', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-notes-'))
     const workspace = join(root, 'workspace')
-    const outside = join(root, 'outside.md')
+    const outside = join(root, process.platform === 'win32' ? 'outside' : 'outside.md')
+    const sentinel = process.platform === 'win32' ? join(outside, 'sentinel') : outside
     await mkdir(join(workspace, '.dsh-lite'), { recursive: true })
-    await writeFile(outside, 'outside')
-    await symlink(outside, join(workspace, '.dsh-lite', 'notes.md'))
+    if (process.platform === 'win32') await mkdir(outside)
+    await writeFile(sentinel, 'outside')
+    await symlink(outside, join(workspace, '.dsh-lite', 'notes.md'), process.platform === 'win32' ? 'junction' : 'file')
     await expect(writeNotes(workspace, 'replacement', 64)).rejects.toThrow('outside workspace')
-    expect(await readFile(outside, 'utf8')).toBe('outside')
+    expect(await readFile(sentinel, 'utf8')).toBe('outside')
   })
 
   it('executes write and read through the official tool registry and unregisters on disposal', async () => {

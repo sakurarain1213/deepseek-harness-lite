@@ -71,8 +71,13 @@ describe('pack manifests', () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-package-'))
     const outside = await mkdtemp(join(tmpdir(), 'dsh-lite-package-outside-'))
     await writeFile(join(root, 'package.json'), JSON.stringify({ name: '@dsh-lite/pack-example', dshLite: './manifest.json' }))
-    await writeFile(join(outside, 'manifest.json'), JSON.stringify({ id: 'example' }))
-    await import('node:fs/promises').then(({ symlink }) => symlink(join(outside, 'manifest.json'), join(root, 'manifest.json')))
+    const outsideManifest = process.platform === 'win32' ? outside : join(outside, 'manifest.json')
+    if (process.platform !== 'win32') await writeFile(outsideManifest, JSON.stringify({ id: 'example' }))
+    await import('node:fs/promises').then(({ symlink }) => symlink(
+      outsideManifest,
+      join(root, 'manifest.json'),
+      process.platform === 'win32' ? 'junction' : 'file',
+    ))
     await expect(loadPackPackage(join(root, 'package.json'))).rejects.toThrow('contained')
   })
 
@@ -293,8 +298,8 @@ describe('pack manifests', () => {
     expect(commands).toHaveLength(2)
     expect(commands[0]).toMatchObject({ file: 'corepack', args: ['pnpm@10.15.0', '--ignore-workspace', 'rebuild', 'node-pty', '--dir', expect.any(String)] })
     expect(commands[1]?.file).toBe(process.execPath)
-    expect(commands[1]?.args[0]).toMatch(/dsh-subprocess-local\/scripts\/ensure-spawn-helper\.mjs$/)
-    expect(commands.every(({ cwd }) => cwd?.includes('.stage-'))).toBe(true)
+    expect(commands[1]?.args[0]?.replaceAll('\\', '/')).toMatch(/dsh-subprocess-local\/scripts\/ensure-spawn-helper\.mjs$/)
+    expect(commands.every(({ cwd }) => cwd?.includes(process.platform === 'win32' ? join('shell', 'versions') : '.stage-'))).toBe(true)
   })
 
   it.skipIf(process.platform === 'win32')('builds the audited node-pty package when a cold profile has no native binary', async () => {

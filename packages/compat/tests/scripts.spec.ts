@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
@@ -108,7 +109,7 @@ describe('repository gates', () => {
     const { stdout } = await execFileAsync(process.execPath, [
       '--input-type=module',
       '--eval',
-      `import { sanitizeDiagnostic } from ${JSON.stringify(join(repository, 'packages/compat/bin/diagnostics.mjs'))}; process.stdout.write(sanitizeDiagnostic(process.env.SENTINEL))`,
+      `import { sanitizeDiagnostic } from ${JSON.stringify(pathToFileURL(join(repository, 'packages/compat/bin/diagnostics.mjs')).href)}; process.stdout.write(sanitizeDiagnostic(process.env.SENTINEL))`,
     ], { env: { ...process.env, SENTINEL: source } })
 
     expect(stdout).toContain('https://[redacted]@registry.test/')

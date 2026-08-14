@@ -320,7 +320,11 @@ describe('diagnostic CLI', { timeout: process.platform === 'win32' ? 30_000 : 5_
     const chatCurrent = await resolveCurrentTree(chatHome)
     const workspaceCurrent = await resolveCurrentTree(workspaceHome)
     await rm(join(chatCurrent, 'profile'), { recursive: true })
-    await import('node:fs/promises').then(({ symlink }) => symlink(join(workspaceCurrent, 'profile'), join(chatCurrent, 'profile')))
+    await import('node:fs/promises').then(({ symlink }) => symlink(
+      join(workspaceCurrent, 'profile'),
+      join(chatCurrent, 'profile'),
+      process.platform === 'win32' ? 'junction' : 'dir',
+    ))
 
     const output = io()
     expect(await main(['doctor', '--home', chatHome], output)).toBe(1)

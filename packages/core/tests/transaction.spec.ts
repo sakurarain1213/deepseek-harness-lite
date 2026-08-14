@@ -8,6 +8,7 @@ describe('publishTree', () => {
   const deadId = '00000000-0000-4000-8000-000000000001'
   const liveId = '00000000-0000-4000-8000-000000000002'
   const heartbeatId = '00000000-0000-4000-8000-000000000003'
+  const directoryLink = (target: string, path: string) => symlink(target, path, process.platform === 'win32' ? 'junction' : 'dir')
 
   const lease = (id: string, overrides: Record<string, unknown> = {}) => ({
     id,
@@ -157,7 +158,7 @@ describe('publishTree', () => {
   it('fails before construction when versions is redirected through a symlink', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-transaction-'))
     const outside = await mkdtemp(join(tmpdir(), 'dsh-lite-outside-'))
-    await symlink(outside, join(root, 'versions'))
+    await directoryLink(outside, join(root, 'versions'))
 
     let built = false
     await expect(publishTree(root, async () => { built = true })).rejects.toThrow('contained')
@@ -217,7 +218,7 @@ describe('publishTree', () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-transaction-'))
     const outside = await mkdtemp(join(tmpdir(), 'dsh-lite-outside-'))
     await writeFile(join(outside, 'sentinel'), 'keep')
-    await symlink(outside, join(root, `.stage-${deadId}`))
+    await directoryLink(outside, join(root, `.stage-${deadId}`))
     await writeFile(join(root, `.lease-${deadId}.json`), JSON.stringify(lease(deadId)))
     await publishTree(root, async (stage) => writeFile(join(stage, 'value'), 'fresh'), {
       hostname: 'local',
@@ -231,10 +232,10 @@ describe('publishTree', () => {
   it('refuses ownership metadata supplied through a symlinked lease', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-transaction-'))
     const outside = await mkdtemp(join(tmpdir(), 'dsh-lite-outside-'))
-    const outsideLease = join(outside, 'lease.json')
     await writeFile(join(root, `.stage-${deadId}`), 'keep')
-    await writeFile(outsideLease, JSON.stringify(lease(deadId)))
-    await symlink(outsideLease, join(root, `.lease-${deadId}.json`))
+    const outsideLease = process.platform === 'win32' ? outside : join(outside, 'lease.json')
+    if (process.platform !== 'win32') await writeFile(outsideLease, JSON.stringify(lease(deadId)))
+    await symlink(outsideLease, join(root, `.lease-${deadId}.json`), process.platform === 'win32' ? 'junction' : 'file')
     await publishTree(root, async (stage) => writeFile(join(stage, 'value'), 'fresh'), {
       hostname: 'local',
       isProcessAlive: () => false,
@@ -333,11 +334,26 @@ describe('publishTree', () => {
     }
   })
 
+  it.skipIf(process.platform !== 'win32')('keeps a native Windows absolute junction valid after publication', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-lite-transaction-'))
+    await publishTree(root, async (candidate) => {
+      const store = join(candidate, '.pnpm', 'package@1.0.0', 'node_modules', 'package')
+      await mkdir(store, { recursive: true })
+      await writeFile(join(store, 'package.json'), '{"name":"package","version":"1.0.0"}\n')
+      await mkdir(join(candidate, 'node_modules'), { recursive: true })
+      await symlink(store, join(candidate, 'node_modules', 'package'), 'junction')
+    })
+
+    const current = await resolveCurrentTree(root)
+    await expect(readFile(join(current, 'node_modules', 'package', 'package.json'), 'utf8'))
+      .resolves.toContain('"name":"package"')
+  })
+
   it('rejects a symlinked published version', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-transaction-'))
     const outside = await mkdtemp(join(tmpdir(), 'dsh-lite-outside-'))
     await import('node:fs/promises').then(({ mkdir }) => mkdir(join(root, 'versions'), { recursive: true }))
-    await symlink(outside, join(root, 'versions', deadId))
+    await directoryLink(outside, join(root, 'versions', deadId))
     await writeFile(join(root, 'current.json'), JSON.stringify({ version: deadId }))
     await expect(resolveCurrentTree(root)).rejects.toThrow('contained')
     expect((await readdir(root)).filter((name) => name.startsWith('.reader-'))).toEqual([])

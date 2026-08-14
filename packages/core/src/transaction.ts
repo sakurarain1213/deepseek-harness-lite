@@ -353,6 +353,7 @@ async function pruneVersions(
   versions: string,
   pointer: TreePointer,
   owner: TransactionLease,
+  eligibleVersions: ReadonlySet<string>,
   fs: TransactionFs,
 ): Promise<void> {
   await cleanupDeadReaders(root, fs)
@@ -366,7 +367,7 @@ async function pruneVersions(
     return
   }
   for (const name of names) {
-    if (!TRANSACTION_ID.test(name) || keep.has(name)) continue
+    if (!TRANSACTION_ID.test(name) || keep.has(name) || !eligibleVersions.has(name)) continue
     const candidate = immediateChild(versions, name)
     const markerName = `.retiring-${name}.json`
     const marker = immediateChild(root, markerName)
@@ -420,11 +421,13 @@ export async function publishTree(
   const stage = immediateChild(root, stageName)
   const versions = join(root, 'versions')
   const version = immediateChild(versions, id)
+  const candidate = process.platform === 'win32' ? version : stage
   const pointer = immediateChild(root, pointerName)
   const lease = immediateChild(root, leaseName)
   await fs.mkdir(versions, { recursive: true })
   const realVersions = await assertContainedVersions(root, fs)
   await cleanupDeadOwners(root, fs)
+  const eligibleVersions = new Set(await fs.readdir(versions))
   const processStartToken = fs.processStartToken(process.pid)
   if (!processStartToken) throw new Error('unable to establish transaction process identity')
   const leaseRecord: TransactionLease = {
@@ -446,10 +449,13 @@ export async function publishTree(
   let versionPublished = false
   let pointerPublished = false
   try {
-    await fs.mkdir(stage, { recursive: false })
-    await build(stage)
-    await retryRename(fs, stage, version)
-    versionPublished = true
+    await fs.mkdir(candidate, { recursive: false })
+    if (candidate === version) versionPublished = true
+    await build(candidate)
+    if (candidate === stage) {
+      await retryRename(fs, stage, version)
+      versionPublished = true
+    }
     let previous: string | undefined
     try {
       previous = parsePointer(await fs.readFile(join(root, 'current.json'), 'utf8')).version
@@ -460,7 +466,7 @@ export async function publishTree(
     await fs.writeFile(pointer, `${JSON.stringify(nextPointer)}\n`, { flag: 'wx' })
     await retryRename(fs, pointer, join(root, 'current.json'))
     pointerPublished = true
-    await pruneVersions(root, realVersions, nextPointer, leaseRecord, fs)
+    await pruneVersions(root, realVersions, nextPointer, leaseRecord, eligibleVersions, fs)
     return version
   } finally {
     clearInterval(heartbeat)

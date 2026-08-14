@@ -277,7 +277,12 @@ async function activateCordis(path: string, rows: CordisRow[], resolvedPackages:
 
 async function resolveProfilePackage(profileDir: string, name: string): Promise<{ entry: string; packageRoot: string; version: string }> {
   const nodeModules = await realpath(join(profileDir, 'node_modules'))
-  const entry = await realpath(createRequire(join(profileDir, 'package.json')).resolve(name))
+  let entry: string
+  try {
+    entry = await realpath(createRequire(join(profileDir, 'package.json')).resolve(name))
+  } catch {
+    throw new Error(`dependency "${name}" did not resolve profile-local`)
+  }
   if (!isPathInside(nodeModules, entry)) throw new Error(`dependency "${name}" did not resolve profile-local`)
   let directory = dirname(entry)
   while (true) {
