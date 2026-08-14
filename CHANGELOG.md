@@ -19,10 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Stable DeepSeek Harness package line: `0.1.0-rc.6`, with supporting packages pinned in `compat/upstream-lock.json`.
 - Compatibility asset checks work from a cold pnpm metadata cache while preserving exact pins, canonical seed integrity, and byte-for-byte generated assets.
-- Compatibility seeds and generated assets stay LF-normalized so strict integrity hashes survive Windows checkouts.
+- Compatibility seeds, generated closures, and the generated plugin catalog stay LF-normalized so strict integrity hashes and catalog checks survive Windows checkouts.
 - Linux shell profiles authorize only the audited `node-pty` build and require a real native module before publication.
 - Windows child processes execute Corepack through its JavaScript entry without shell command interpolation, preserving paths and arguments containing spaces or metacharacters.
 - Native shell installation and runtime checks execute only on their matching runner platform; foreign-platform coverage remains deterministic compatibility metadata.
-- CLI profile-materialization tests run in a dedicated phase, while unrelated test files retain parallel execution.
+- Profile-building integration files run in a narrow serialized phase, while unrelated test files retain parallel execution.
 - Public CI retains source history so bundled-plugin provenance remains independently verifiable.
 - Windows remains planned/experimental until native stable CI passes and `continue-on-error` is removed.

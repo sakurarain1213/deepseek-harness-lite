@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { chmod, mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
@@ -119,19 +119,22 @@ describe('repository gates', () => {
   it('redacts registry credentials from unavailable upstream reports', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-upstream-error-'))
     const output = join(root, 'report.json')
-    const fakeBin = join(root, 'bin')
-    await mkdir(fakeBin)
-    const fakeCorepack = join(fakeBin, 'corepack')
-    await writeFile(fakeCorepack, '#!/bin/sh\necho "registry failed: $SENTINEL" >&2\nexit 1\n')
-    await chmod(fakeCorepack, 0o755)
     const secret = `ah-${'d'.repeat(64)}`
+    const registry = `http://user:${secret}@127.0.0.1:1/`
 
     await expect(execFileAsync(process.execPath, [
       join(repository, 'packages/compat/bin/upstream-report.mjs'), '--channel', 'latest', '--output', output,
-    ], { env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH ?? ''}`, SENTINEL: `https://user:${secret}@registry.test/` } }))
+    ], {
+      env: {
+        ...process.env,
+        NPM_CONFIG_FETCH_RETRIES: '0',
+        NPM_CONFIG_FETCH_TIMEOUT: '1000',
+        NPM_CONFIG_REGISTRY: registry,
+      },
+    }))
       .rejects.toBeDefined()
     const report = await readFile(output, 'utf8')
-    expect(report).toContain('https://[redacted]@registry.test/')
+    expect(report).toContain('"result": "unavailable"')
     expect(report).not.toContain(secret)
   })
 

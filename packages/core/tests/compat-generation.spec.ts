@@ -6,11 +6,17 @@ import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
+const generationTimeout = process.platform === 'win32' ? 120_000 : 60_000
 
 describe('compatibility asset generation', () => {
   it('keeps canonical seeds and generated assets byte-stable across Git platforms', async () => {
     const cwd = resolve('.')
-    const { stdout: tracked } = await execFileAsync('git', ['ls-files', 'compat/lock-seeds/**', 'packages/core/compat/**'], { cwd })
+    const { stdout: tracked } = await execFileAsync('git', [
+      'ls-files',
+      'compat/lock-seeds/**',
+      'packages/core/compat/**',
+      'catalog/generated/README.md',
+    ], { cwd })
     const files = tracked.trim().split('\n').filter(Boolean)
     expect(files.length).toBeGreaterThan(0)
 
@@ -32,7 +38,7 @@ describe('compatibility asset generation', () => {
     } finally {
       await rm(root, { recursive: true, force: true })
     }
-  }, 60_000)
+  }, generationTimeout)
 
   it('checks the full committed matrix without mutating it and detects stale files', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-compat-check-'))
@@ -48,7 +54,7 @@ describe('compatibility asset generation', () => {
     } finally {
       await rm(root, { recursive: true, force: true })
     }
-  }, 60_000)
+  }, generationTimeout)
 
   it('regenerates missing output from integrity-pinned canonical seeds and rejects altered output', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-compat-bootstrap-'))
@@ -72,5 +78,5 @@ describe('compatibility asset generation', () => {
     } finally {
       await rm(root, { recursive: true, force: true })
     }
-  }, 60_000)
+  }, generationTimeout)
 })

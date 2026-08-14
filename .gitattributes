@@ -1,2 +1,3 @@
 compat/lock-seeds/** text eol=lf
 packages/core/compat/** text eol=lf
+catalog/generated/README.md text eol=lf

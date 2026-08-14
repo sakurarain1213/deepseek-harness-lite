@@ -279,6 +279,7 @@ describe('pack manifests', () => {
     const commands: { file: string; args: string[]; cwd?: string }[] = []
     await materializeProfile([shell], join(root, 'shell'), 'linux', {
       activate: false,
+      probeExecutable: async () => true,
       runAuditedCommand: async (file, args, cwd) => {
         commands.push({ file, args, cwd })
         if (file === 'corepack') {
