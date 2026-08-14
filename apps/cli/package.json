@@ -1,0 +1,22 @@
+{
+  "name": "@dsh-lite/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "dsh-lite": "./dist/src/bin.js"
+  },
+  "files": ["dist", "catalog.json"],
+  "dependencies": {
+    "@dsh-lite/core": "workspace:*",
+    "@dsh-lite/pack-research": "workspace:*",
+    "@dsh-lite/pack-shell": "workspace:*",
+    "@dsh-lite/pack-workspace": "workspace:*",
+    "@dsh-lite/plugin-command-allowlist": "workspace:*",
+    "@dsh-lite/plugin-health": "workspace:*",
+    "@dsh-lite/plugin-safe-fetch": "workspace:*",
+    "@dsh-lite/plugin-session-export": "workspace:*",
+    "@dsh-lite/plugin-workspace-notes": "workspace:*",
+    "@dsh-lite/runtime": "workspace:*"
+  }
+}

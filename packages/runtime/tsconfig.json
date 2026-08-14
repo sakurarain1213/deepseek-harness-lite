@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../../plugins/health" },
+    { "path": "../../plugins/safe-fetch" },
+    { "path": "../../plugins/workspace-notes" },
+    { "path": "../../plugins/command-allowlist" },
+    { "path": "../../plugins/session-export" }
+  ],
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

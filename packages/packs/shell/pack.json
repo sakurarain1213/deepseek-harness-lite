@@ -1,0 +1,36 @@
+{
+  "id": "shell",
+  "schemaVersion": 1,
+  "defaultEnabled": false,
+  "platforms": ["darwin", "linux", "win32"],
+  "dependencies": {
+    "@deepseek-ai/dsh-sandbox-local": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-sandbox-policy": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-shell-env": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-subprocess-local": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.6"
+  },
+  "platformDependencies": {
+    "darwin": {
+      "@deepseek-ai/dsh-bash-local": "0.1.0-rc.6",
+      "@deepseek-ai/dsh-bash-sandbox": "0.1.0-rc.6",
+      "@deepseek-ai/dsh-tool-bash": "0.1.0-rc.6"
+    },
+    "linux": {
+      "@deepseek-ai/dsh-bash-local": "0.1.0-rc.6",
+      "@deepseek-ai/dsh-bash-sandbox": "0.1.0-rc.6",
+      "@deepseek-ai/dsh-tool-bash": "0.1.0-rc.6"
+    },
+    "win32": {
+      "@deepseek-ai/dsh-pwsh-local": "0.1.0-rc.6",
+      "@deepseek-ai/dsh-pwsh-sandbox": "0.1.0-rc.6",
+      "@deepseek-ai/dsh-tool-pwsh": "0.1.0-rc.6"
+    }
+  },
+  "plugins": ["command-allowlist"],
+  "conflicts": [],
+  "probes": [
+    { "id": "shell", "kind": "executable", "platforms": ["darwin", "linux"], "alternatives": ["bash"] },
+    { "id": "shell", "kind": "executable", "platforms": ["win32"], "alternatives": ["pwsh"] }
+  ]
+}

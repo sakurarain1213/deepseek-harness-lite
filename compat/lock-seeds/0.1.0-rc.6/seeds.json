@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "upstream": "0.1.0-rc.6",
+  "pnpm": "10.15.0",
+  "packs": ["workspace", "shell", "research"],
+  "locks": {
+    "darwin": {
+      "file": "locks/darwin.yaml",
+      "sha256": "c936f9bf27099127b813d8a6553968c100af260ac165e69f1904b3fe10fa3955"
+    },
+    "linux": {
+      "file": "locks/linux.yaml",
+      "sha256": "c936f9bf27099127b813d8a6553968c100af260ac165e69f1904b3fe10fa3955"
+    },
+    "win32": {
+      "file": "locks/win32.yaml",
+      "sha256": "2abddd6ee94191c8c0101f5f1af425efc3fafefd4525166b5fe07bca49fc27ee"
+    }
+  }
+}

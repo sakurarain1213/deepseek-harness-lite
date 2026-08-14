@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "test-support" },
+    { "path": "health" },
+    { "path": "safe-fetch" },
+    { "path": "workspace-notes" },
+    { "path": "command-allowlist" },
+    { "path": "session-export" }
+  ]
+}

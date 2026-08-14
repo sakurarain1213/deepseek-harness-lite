@@ -1,0 +1,41 @@
+name: Upstream metadata observation
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    name: ${{ matrix.channel }} metadata
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [latest, next]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pinned package manager
+        run: corepack enable
+      - name: Install repository tooling
+        run: corepack pnpm install --frozen-lockfile
+      - name: Resolve coherent upstream metadata and tag skew
+        env:
+          DSH_COMPAT_CHANNEL: ${{ matrix.channel }}
+        run: node packages/compat/bin/upstream-report.mjs --channel ${{ matrix.channel }} --output compat/reports/${{ matrix.channel }}-${{ runner.os }}.json
+      - name: Test metadata coherence rules
+        run: corepack pnpm vitest run packages/compat/tests/upstream.spec.ts packages/runtime/tests/upstream-lock.spec.ts
+      - name: Typecheck compatibility package
+        run: corepack pnpm exec tsc -p packages/compat/tsconfig.json --pretty false
+      - name: Upload metadata observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-${{ matrix.channel }}-metadata
+          path: compat/reports/*.json

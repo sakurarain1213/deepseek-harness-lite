@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "channel": "latest",
+  "evidenceKind": "registry-metadata-observation",
+  "liteCommit": "unavailable",
+  "upstreamVersion": "unresolved",
+  "platform": "unmeasured",
+  "arch": "unmeasured",
+  "nodeVersion": "unmeasured",
+  "packageManager": "pnpm@10.15.0",
+  "selection": {
+    "packs": [],
+    "plugins": []
+  },
+  "packageInventory": {},
+  "commands": [],
+  "result": "unavailable",
+  "measured": false,
+  "timestamp": "2026-08-14T00:00:00.000Z",
+  "diagnostics": [
+    "Committed placeholder: the scheduled upstream compatibility workflow has not yet produced executable evidence."
+  ]
+}

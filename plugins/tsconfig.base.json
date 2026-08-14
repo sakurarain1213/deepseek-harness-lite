@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@deepseek-ai/cordis": ["packages/runtime/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-tools": ["packages/runtime/node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts"],
+      "@deepseek-ai/dsh-system-prompt": ["packages/runtime/node_modules/@deepseek-ai/dsh-system-prompt/lib/types/index.d.ts"],
+      "@deepseek-ai/schemastery": ["node_modules/.pnpm/node_modules/@deepseek-ai/schemastery/lib/types/index.d.ts"],
+      "@dsh-lite/plugin-test-support": ["plugins/test-support/src/harness.ts"]
+    }
+  }
+}

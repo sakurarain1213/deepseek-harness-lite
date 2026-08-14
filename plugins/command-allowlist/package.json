@@ -1,0 +1,7 @@
+{
+  "name": "@dsh-lite/plugin-command-allowlist", "version": "0.1.0", "type": "module",
+  "exports": { ".": { "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" } },
+  "files": ["dist", "README.md"],
+  "peerDependencies": { "@deepseek-ai/cordis": "4.0.1", "@deepseek-ai/dsh-tools": "0.1.0-rc.6" },
+  "dependencies": { "@deepseek-ai/schemastery": "3.18.1" }
+}

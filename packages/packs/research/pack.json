@@ -1,0 +1,10 @@
+{
+  "id": "research",
+  "schemaVersion": 1,
+  "defaultEnabled": false,
+  "platforms": ["darwin", "linux", "win32"],
+  "dependencies": {},
+  "plugins": ["safe-fetch"],
+  "conflicts": [],
+  "probes": []
+}

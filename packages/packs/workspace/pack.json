@@ -1,0 +1,10 @@
+{
+  "id": "workspace",
+  "schemaVersion": 1,
+  "defaultEnabled": true,
+  "platforms": ["darwin", "linux", "win32"],
+  "dependencies": {},
+  "plugins": ["workspace-notes", "session-export"],
+  "conflicts": [],
+  "probes": []
+}

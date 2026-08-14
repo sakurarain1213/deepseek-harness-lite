@@ -1,0 +1,31 @@
+{
+  "name": "deepseek-harness-lite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": "^22.19.0 || >=24"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "catalog:generate": "node packages/compat/bin/catalog-readme.mjs --input catalog/plugins.json --output catalog/generated/README.md",
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "compat:generate": "node scripts/generate-compatibility-assets.mjs",
+    "compat:check": "node scripts/generate-compatibility-assets.mjs --check",
+    "lint": "tsc -b --pretty false && node scripts/verify-repo.mjs",
+    "measure:install": "node scripts/measure-install.mjs",
+    "smoke:api": "node scripts/real-api-smoke.mjs",
+    "test:plugins": "vitest run --config plugins/vitest.config.ts",
+    "typecheck": "tsc -b --pretty false",
+    "test": "tsc -b && pnpm compat:check && vitest run && pnpm test:plugins",
+    "verify:repo": "node scripts/verify-repo.mjs",
+    "verify:release": "node scripts/verify-repo.mjs --release"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

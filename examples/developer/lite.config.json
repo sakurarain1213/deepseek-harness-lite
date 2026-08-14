@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "channel": "stable",
+    "version": "0.1.0-rc.6"
+  },
+  "profile": "developer",
+  "packs": ["workspace"],
+  "plugins": ["health"]
+}

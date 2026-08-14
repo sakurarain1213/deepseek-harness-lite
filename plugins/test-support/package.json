@@ -1,0 +1,11 @@
+{
+  "name": "@dsh-lite/plugin-test-support",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": { "types": "./dist/src/harness.d.ts", "default": "./dist/src/harness.js" } },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.6"
+  }
+}

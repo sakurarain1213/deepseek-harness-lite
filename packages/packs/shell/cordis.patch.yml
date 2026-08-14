@@ -1,0 +1,23 @@
+rows:
+  - id: subprocess
+    name: '@deepseek-ai/dsh-subprocess-local'
+  - id: sandbox
+    name: '@deepseek-ai/dsh-sandbox-local'
+  - id: sandbox-policy
+    name: '@deepseek-ai/dsh-sandbox-policy'
+    config:
+      mode: workspace-write
+  - id: shell-env
+    name: '@deepseek-ai/dsh-shell-env'
+  - id: bash-sandbox
+    name: '@deepseek-ai/dsh-bash-sandbox'
+    platforms: [darwin, linux]
+  - id: tool-bash
+    name: '@deepseek-ai/dsh-tool-bash'
+    platforms: [darwin, linux]
+  - id: pwsh-sandbox
+    name: '@deepseek-ai/dsh-pwsh-sandbox'
+    platforms: [win32]
+  - id: tool-pwsh
+    name: '@deepseek-ai/dsh-tool-pwsh'
+    platforms: [win32]

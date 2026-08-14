@@ -1,0 +1,18 @@
+{
+  "packs": [
+    "@dsh-lite/pack-workspace",
+    "@dsh-lite/pack-shell",
+    "@dsh-lite/pack-research"
+  ],
+  "plugins": [
+    { "id": "health", "package": "@dsh-lite/plugin-health" },
+    { "id": "safe-fetch", "package": "@dsh-lite/plugin-safe-fetch" },
+    { "id": "workspace-notes", "package": "@dsh-lite/plugin-workspace-notes" },
+    { "id": "command-allowlist", "package": "@dsh-lite/plugin-command-allowlist" },
+    { "id": "session-export", "package": "@dsh-lite/plugin-session-export" }
+  ],
+  "presets": {
+    "chat-only": [],
+    "developer": ["workspace"]
+  }
+}

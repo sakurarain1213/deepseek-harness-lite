@@ -1,0 +1,13 @@
+{
+  "name": "@dsh-lite/pack-shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": ["pack.json", "cordis.patch.yml"],
+  "exports": {
+    "./package.json": "./package.json",
+    "./pack.json": "./pack.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "dshLite": "./pack.json"
+}
