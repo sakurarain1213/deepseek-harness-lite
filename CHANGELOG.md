@@ -18,4 +18,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Compatibility
 
 - Stable DeepSeek Harness package line: `0.1.0-rc.6`, with supporting packages pinned in `compat/upstream-lock.json`.
+- Compatibility asset checks work from a cold pnpm metadata cache while preserving exact pins, canonical seed integrity, and byte-for-byte generated assets.
 - Windows remains planned/experimental until native stable CI passes and `continue-on-error` is removed.
