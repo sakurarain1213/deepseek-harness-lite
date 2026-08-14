@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { resolveCorepackCommand } from '../packages/core/src/corepack.ts'
 
 const execFileAsync = promisify(execFile)
 const root = resolve(import.meta.dirname, '..')
@@ -146,7 +147,8 @@ try {
           dependencies,
           pnpm: { supportedArchitectures: { os: [platform], cpu: [process.arch] } },
         }, null, 2)}\n`)
-        await execFileAsync('corepack', [`pnpm@${packageManagerVersion}`, 'install', '--ignore-workspace', '--lockfile-only', '--prefer-offline', '--ignore-scripts', '--ignore-pnpmfile', '--config.confirmModulesPurge=false'], {
+        const corepack = await resolveCorepackCommand([`pnpm@${packageManagerVersion}`, 'install', '--ignore-workspace', '--lockfile-only', '--prefer-offline', '--ignore-scripts', '--ignore-pnpmfile', '--config.confirmModulesPurge=false'])
+        await execFileAsync(corepack.file, corepack.args, {
           cwd: temporary,
           env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' },
         })

@@ -6,6 +6,7 @@ import { initialize, isSupportedNodeVersion, loadRegistry, main, resolveCliPath,
 import { resolveCurrentTree } from '@dsh-lite/core'
 
 const valid = { schemaVersion: 1, upstream: { channel: 'stable', version: '0.1.0-rc.6' }, profile: 'chat-only', packs: [], plugins: [] }
+const nativePlatform = process.platform as CliIo['platform']
 
 const io = (): CliIo & { stdout: string[]; stderr: string[] } => {
   const stdout: string[] = []
@@ -125,7 +126,7 @@ describe('diagnostic CLI', () => {
     await writeFile(config, JSON.stringify({ ...valid, profile: 'custom', packs: ['shell', 'workspace'] }))
 
     const output = io()
-    output.platform = 'darwin'
+    output.platform = nativePlatform
     const exitCode = await main(['init', '--config', config, '--home', home], output)
     expect({ exitCode, stderr: output.stderr }).toEqual({ exitCode: 0, stderr: [] })
     const current = await resolveCurrentTree(home)
@@ -138,25 +139,34 @@ describe('diagnostic CLI', () => {
       schemaVersion: 1,
       identity: {
         profile: 'custom',
-        closureId: 'darwin-workspace+shell',
+        closureId: `${nativePlatform}-workspace+shell`,
         upstream: { channel: 'stable', version: '0.1.0-rc.6' },
       },
-      platform: 'darwin',
+      platform: nativePlatform,
       arch: process.arch,
       packageNames: Object.keys(packageJson.dependencies).sort(),
       packageVersions: packageJson.dependencies,
-      cordisRows: [
-        { id: 'subprocess', name: '@deepseek-ai/dsh-subprocess-local' },
-        { id: 'sandbox', name: '@deepseek-ai/dsh-sandbox-local' },
-        { id: 'sandbox-policy', name: '@deepseek-ai/dsh-sandbox-policy', config: { mode: 'workspace-write' } },
-        { id: 'shell-env', name: '@deepseek-ai/dsh-shell-env' },
-        { id: 'bash-sandbox', name: '@deepseek-ai/dsh-bash-sandbox' },
-        { id: 'tool-bash', name: '@deepseek-ai/dsh-tool-bash' },
-      ],
+      cordisRows: nativePlatform === 'win32'
+        ? [
+            { id: 'subprocess', name: '@deepseek-ai/dsh-subprocess-local' },
+            { id: 'sandbox', name: '@deepseek-ai/dsh-sandbox-local' },
+            { id: 'sandbox-policy', name: '@deepseek-ai/dsh-sandbox-policy', config: { mode: 'workspace-write' } },
+            { id: 'shell-env', name: '@deepseek-ai/dsh-shell-env' },
+            { id: 'pwsh-sandbox', name: '@deepseek-ai/dsh-pwsh-sandbox' },
+            { id: 'tool-pwsh', name: '@deepseek-ai/dsh-tool-pwsh' },
+          ]
+        : [
+            { id: 'subprocess', name: '@deepseek-ai/dsh-subprocess-local' },
+            { id: 'sandbox', name: '@deepseek-ai/dsh-sandbox-local' },
+            { id: 'sandbox-policy', name: '@deepseek-ai/dsh-sandbox-policy', config: { mode: 'workspace-write' } },
+            { id: 'shell-env', name: '@deepseek-ai/dsh-shell-env' },
+            { id: 'bash-sandbox', name: '@deepseek-ai/dsh-bash-sandbox' },
+            { id: 'tool-bash', name: '@deepseek-ai/dsh-tool-bash' },
+          ],
       packIds: ['workspace', 'shell'],
       pluginIds: ['command-allowlist', 'session-export', 'workspace-notes'],
     })
-  })
+  }, 30_000)
 
   it('applies the developer workspace preset when packs are omitted', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-'))

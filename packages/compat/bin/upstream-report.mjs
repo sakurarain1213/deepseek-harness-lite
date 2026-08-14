@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { resolveCorepackCommand } from '../../core/src/corepack.ts'
 import { sanitizeDiagnostic } from './diagnostics.mjs'
 
 const execFileAsync = promisify(execFile)
@@ -28,7 +29,8 @@ const limitations = [
 async function view(specifier, field) {
   const command = ['pnpm', 'view', specifier, field, '--json'].filter(Boolean)
   commands.push(`corepack ${command.join(' ')}`)
-  const { stdout } = await execFileAsync('corepack', command, {
+  const corepack = await resolveCorepackCommand(command)
+  const { stdout } = await execFileAsync(corepack.file, corepack.args, {
     cwd: root,
     env: { ...process.env, NPM_CONFIG_CACHE: registryCache },
     maxBuffer: 16 * 1024 * 1024,

@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include, { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
+import { resolveCorepackCommand } from './corepack.js'
 import type { Platform } from './packs.js'
 import { publishTree } from './transaction.js'
 
@@ -171,7 +172,8 @@ const execFileAsync = promisify(execFile)
 const FROZEN_INSTALL_ARGS = ['install', '--ignore-workspace', '--frozen-lockfile', '--ignore-scripts', '--ignore-pnpmfile', '--config.confirmModulesPurge=false']
 
 async function installProfile(profileDir: string, args: string[]): Promise<void> {
-  await execFileAsync('corepack', ['pnpm@10.15.0', ...args], { cwd: profileDir, env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' } })
+  const command = await resolveCorepackCommand(['pnpm@10.15.0', ...args])
+  await execFileAsync(command.file, command.args, { cwd: profileDir, env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' } })
 }
 
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex')
@@ -355,7 +357,8 @@ async function resolveTransitivePackage(profileDir: string, parentName: string, 
 async function prepareNodePty(profileDir: string, platform: Platform, options: ValidationOptions): Promise<void> {
   const { packageRoot } = await resolveTransitivePackage(profileDir, '@deepseek-ai/dsh-subprocess-local', 'node-pty', options)
   const run = options.runAuditedCommand ?? (async (file: string, args: string[], cwd: string) => {
-    await execFileAsync(file, args, { cwd })
+    const command = file === 'corepack' ? await resolveCorepackCommand(args) : { file, args }
+    await execFileAsync(command.file, command.args, { cwd })
   })
   if (platform === 'linux' && (process.platform === 'linux' || options.runAuditedCommand)) {
     const prebuild = join(packageRoot, 'prebuilds', `${platform}-${process.arch}`, 'pty.node')

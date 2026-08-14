@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveCorepackCommand } from '../../core/src/corepack.ts'
 import { sanitizeDiagnostic } from './diagnostics.mjs'
 
 const packageManager = 'pnpm@10.15.0'
@@ -57,18 +58,21 @@ export function releaseEvidenceErrors({ stable, plugins, commitExists }) {
   return errors
 }
 
-const defaultExecute = (step, root) => new Promise((resolveExecution) => {
-  const child = spawn(step.file, step.args, {
-    cwd: root,
-    env: { ...process.env, ...step.env },
-    stdio: 'inherit',
+const defaultExecute = async (step, root) => {
+  const command = step.file === 'corepack' ? await resolveCorepackCommand(step.args) : step
+  return new Promise((resolveExecution) => {
+    const child = spawn(command.file, command.args, {
+      cwd: root,
+      env: { ...process.env, ...step.env },
+      stdio: 'inherit',
+    })
+    child.once('error', (error) => resolveExecution({ exitCode: null, diagnostic: error.message }))
+    child.once('exit', (code, signal) => resolveExecution({
+      exitCode: code,
+      ...(signal ? { diagnostic: `terminated by signal ${signal}` } : {}),
+    }))
   })
-  child.once('error', (error) => resolveExecution({ exitCode: null, diagnostic: error.message }))
-  child.once('exit', (code, signal) => resolveExecution({
-    exitCode: code,
-    ...(signal ? { diagnostic: `terminated by signal ${signal}` } : {}),
-  }))
-})
+}
 
 const writeAtomic = async (path, value) => {
   await mkdir(dirname(path), { recursive: true })

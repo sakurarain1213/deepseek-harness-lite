@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { sanitizeDiagnostic } from '../packages/compat/bin/diagnostics.mjs'
+import { resolveCorepackCommand } from '../packages/core/src/corepack.ts'
 
 const execFileAsync = promisify(execFile)
 const args = process.argv.slice(2)
@@ -22,6 +23,12 @@ const lock = JSON.parse(await readFile(join(root, 'compat/upstream-lock.json'), 
 const liteInventory = JSON.parse(await readFile(join(root, 'packages/core/compat/0.1.0-rc.6/closures.json'), 'utf8'))
   .variants.find((entry) => entry.id === `${process.platform}-chat-only`)?.dependencies
 const timestamp = new Date().toISOString()
+
+async function executePackageManager(managerArgs, options) {
+  if (corepackExecutable !== 'corepack') return execFileAsync(corepackExecutable, managerArgs, options)
+  const corepack = await resolveCorepackCommand(managerArgs)
+  return execFileAsync(corepack.file, corepack.args, options)
+}
 
 async function treeMetrics(path) {
   let bytes = 0
@@ -66,7 +73,7 @@ async function installedPackageCount(nodeModules) {
 async function install(directory, dependencies, storeDirectory, cacheDirectory) {
   await writeFile(join(directory, 'package.json'), `${JSON.stringify({ private: true, dependencies }, null, 2)}\n`)
   const managerArgs = ['pnpm@10.15.0', 'install', '--ignore-workspace', '--ignore-scripts', '--ignore-pnpmfile', '--config.confirmModulesPurge=false', '--store-dir', storeDirectory]
-  await execFileAsync(corepackExecutable, managerArgs, {
+  await executePackageManager(managerArgs, {
     cwd: directory,
     env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0', NPM_CONFIG_CACHE: cacheDirectory },
     maxBuffer: 64 * 1024 * 1024,
@@ -85,7 +92,7 @@ async function installCheckout(directory, storeDirectory, cacheDirectory) {
       return path === '' || !path.split('/').some(segment => excluded.has(segment) || segment.endsWith('.tsbuildinfo'))
     },
   })
-  await execFileAsync(corepackExecutable, [
+  await executePackageManager([
     'pnpm@10.15.0', 'install', '--frozen-lockfile', '--ignore-scripts', '--config.confirmModulesPurge=false', '--store-dir', storeDirectory,
   ], {
     cwd: directory,
@@ -118,7 +125,7 @@ try {
   const checkoutDirectory = join(temporary, 'checkout')
   const storeDirectory = join(temporary, 'store')
   const cacheDirectory = join(temporary, 'cache')
-  const { stdout: registryOutput } = await execFileAsync(corepackExecutable, ['pnpm@10.15.0', 'config', 'get', 'registry'], { cwd: root })
+  const { stdout: registryOutput } = await executePackageManager(['pnpm@10.15.0', 'config', 'get', 'registry'], { cwd: root })
   const registry = registryOutput.trim()
   await mkdir(liteDirectory)
   await mkdir(aggregateDirectory)

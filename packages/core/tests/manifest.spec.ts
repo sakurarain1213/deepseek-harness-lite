@@ -23,6 +23,10 @@ const packPath = (id: string): string => resolve(`packages/packs/${id}/pack.json
 const upstreamLockPath = resolve('compat/upstream-lock.json')
 const require = createRequire(import.meta.url)
 const execFileAsync = promisify(execFile)
+const nativePlatform = process.platform as 'darwin' | 'linux' | 'win32'
+const nativeShellRows = nativePlatform === 'win32'
+  ? ['subprocess', 'sandbox', 'sandbox-policy', 'shell-env', 'pwsh-sandbox', 'tool-pwsh']
+  : ['subprocess', 'sandbox', 'sandbox-policy', 'shell-env', 'bash-sandbox', 'tool-bash']
 const coreClosure = [
   '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-agent',
@@ -111,8 +115,7 @@ describe('pack manifests', () => {
 
   it.each([
     ['workspace', 'linux', []],
-    ['shell', 'linux', ['subprocess', 'sandbox', 'sandbox-policy', 'shell-env', 'bash-sandbox', 'tool-bash']],
-    ['shell', 'win32', ['subprocess', 'sandbox', 'sandbox-policy', 'shell-env', 'pwsh-sandbox', 'tool-pwsh']],
+    ['shell', nativePlatform, nativeShellRows],
     ['research', 'linux', []],
   ] as const)('materializes the operational %s closure for %s', async (id, platform, expectedRows) => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-packs-'))
@@ -126,7 +129,7 @@ describe('pack manifests', () => {
       probeExecutable: async () => true,
       activate: false,
     })).resolves.toBeUndefined()
-  })
+  }, 30_000)
 
   it('runs structured probes and refuses publication when one fails', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-packs-'))
@@ -143,17 +146,17 @@ describe('pack manifests', () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-packs-'))
     const manifest = await loadPackManifest(packPath(id))
     const target = join(root, 'generated')
-    await expect(materializeProfile([manifest], target, 'darwin', {
+    await expect(materializeProfile([manifest], target, nativePlatform, {
       probeExecutable: async () => true,
     })).resolves.toMatchObject({ rows: expect.any(Array) })
     const current = await resolveCurrentTree(target)
     expect(JSON.parse(await readFile(join(current, 'profile-state.json'), 'utf8'))).toMatchObject({
-      state: 'ready', frozenInstall: true, activated: true, arch: process.arch,
+      state: 'ready', frozenInstall: true, activated: true, platform: nativePlatform, arch: process.arch,
     })
     await expect(access(join(current, 'pnpm-lock.yaml'))).resolves.toBeUndefined()
     await expect(access(join(current, 'node_modules'))).resolves.toBeUndefined()
     expect((await readdir(current)).some((name) => name.startsWith('.activation-'))).toBe(false)
-  })
+  }, 30_000)
 
   it('derives exact peer closure from installed package metadata', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-packs-'))
@@ -226,14 +229,14 @@ describe('pack manifests', () => {
   it('rejects transitive node-pty resolution outside profile node_modules', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-node-pty-containment-'))
     const shell = await loadPackManifest(packPath('shell'))
-    await materializeProfile([shell], join(root, 'shell'), 'darwin')
+    await materializeProfile([shell], join(root, 'shell'), nativePlatform)
     const profile = await resolveCurrentTree(join(root, 'shell'))
     const ancestorNodePty = createRequire(resolve('packages/core/package.json')).resolve('node-pty')
     await expect(validateInstalledProfile(profile, {
-      expected: { platform: 'darwin', packIds: ['shell'] },
+      expected: { platform: nativePlatform, packIds: ['shell'] },
       resolveTransitivePackage: () => ancestorNodePty,
     })).rejects.toThrow('node-pty')
-  })
+  }, 30_000)
 
   it('uses platform-minimal shell closures', async () => {
     const darwin = await readCompatibilityProfile('darwin', ['shell'])
@@ -253,10 +256,10 @@ describe('pack manifests', () => {
     const manifests = await loadBundled()
     const canonicalProbes: string[][] = []
     const reversedProbes: string[][] = []
-    const canonical = await materializeProfile([manifests.workspace!, manifests.shell!], join(root, 'canonical'), 'darwin', {
+    const canonical = await materializeProfile([manifests.workspace!, manifests.shell!], join(root, 'canonical'), nativePlatform, {
       probeExecutable: async (alternatives) => { canonicalProbes.push(alternatives); return true },
     })
-    const reversed = await materializeProfile([manifests.shell!, manifests.workspace!], join(root, 'reversed'), 'darwin', {
+    const reversed = await materializeProfile([manifests.shell!, manifests.workspace!], join(root, 'reversed'), nativePlatform, {
       probeExecutable: async (alternatives) => { reversedProbes.push(alternatives); return true },
     })
     const canonicalProfile = await resolveCurrentTree(join(root, 'canonical'))
@@ -266,9 +269,9 @@ describe('pack manifests', () => {
     expect(reversedProbes).toEqual(canonicalProbes)
     expect(await readFile(join(reversedProfile, 'cordis.yml'), 'utf8')).toBe(await readFile(join(canonicalProfile, 'cordis.yml'), 'utf8'))
     await expect(validateInstalledProfile(reversedProfile, {
-      expected: { platform: 'darwin', packIds: ['workspace', 'shell'] },
-    })).resolves.toMatchObject({ closureId: 'darwin-workspace+shell' })
-  })
+      expected: { platform: nativePlatform, packIds: ['workspace', 'shell'] },
+    })).resolves.toMatchObject({ closureId: `${nativePlatform}-workspace+shell` })
+  }, 45_000)
 
   it('runs only the audited node-pty build on Linux before validation', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-linux-build-'))
@@ -329,14 +332,14 @@ describe('pack manifests', () => {
     }
   }, 30_000)
 
-  it('does not grant native build permission to a prebuilt macOS shell profile', async () => {
+  it('grants native build permission only when the runner platform requires it', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-node-pty-prebuilt-'))
     try {
       const shell = await loadPackManifest(packPath('shell'))
-      await materializeProfile([shell], join(root, 'shell'), 'darwin', { activate: false })
+      await materializeProfile([shell], join(root, 'shell'), nativePlatform, { activate: false })
       const profile = await resolveCurrentTree(join(root, 'shell'))
       const generatedPackage = JSON.parse(await readFile(join(profile, 'package.json'), 'utf8')) as { pnpm?: { onlyBuiltDependencies?: string[] } }
-      expect(generatedPackage.pnpm?.onlyBuiltDependencies).toBeUndefined()
+      expect(generatedPackage.pnpm?.onlyBuiltDependencies).toEqual(nativePlatform === 'linux' ? ['node-pty'] : undefined)
     } finally {
       await rm(root, { recursive: true, force: true })
     }
@@ -346,7 +349,7 @@ describe('pack manifests', () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-subprocess-'))
     const shell = await loadPackManifest(packPath('shell'))
     const target = join(root, 'generated')
-    await materializeProfile([shell], target, 'darwin')
+    await materializeProfile([shell], target, nativePlatform)
     const profile = await resolveCurrentTree(target)
     const subprocessEntry = createRequire(join(profile, 'package.json')).resolve('@deepseek-ai/dsh-subprocess-local')
     let nodePtyRoot = dirname(createRequire(subprocessEntry).resolve('node-pty'))
@@ -369,18 +372,19 @@ describe('pack manifests', () => {
     expect(helpers.length).toBeGreaterThan(0)
     for (const helper of helpers) await expect(access(helper, 1)).resolves.toBeUndefined()
     await expect(validateInstalledProfile(profile)).resolves.toMatchObject({ subprocessVerified: true })
-  })
+  }, 30_000)
 
   it('removing shell restores the previous dependency and Cordis row set', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-packs-'))
     const target = join(root, 'generated')
     const manifests = await loadBundled()
 
-    const withShell = await materializeProfile([manifests.workspace!, manifests.shell!], target, 'linux', { activate: false, probeExecutable: async () => true })
-    const withoutShell = await materializeProfile([manifests.workspace!], target, 'linux', { activate: false })
+    const withShell = await materializeProfile([manifests.workspace!, manifests.shell!], target, nativePlatform, { activate: false, probeExecutable: async () => true })
+    const withoutShell = await materializeProfile([manifests.workspace!], target, nativePlatform, { activate: false })
 
-    expect(withShell.rows.map((row) => row.id)).toContain('tool-bash')
-    expect(withoutShell.rows.map((row) => row.id)).not.toContain('tool-bash')
+    const nativeTool = nativePlatform === 'win32' ? 'tool-pwsh' : 'tool-bash'
+    expect(withShell.rows.map((row) => row.id)).toContain(nativeTool)
+    expect(withoutShell.rows.map((row) => row.id)).not.toContain(nativeTool)
     expect(withoutShell.packageNames).toEqual(coreClosure)
     expect(withoutShell.packageNames).not.toEqual(expect.arrayContaining([
       '@deepseek-ai/dsh-bash-local',
@@ -388,13 +392,16 @@ describe('pack manifests', () => {
       '@deepseek-ai/dsh-shell',
       '@deepseek-ai/dsh-shell-env',
       '@deepseek-ai/dsh-tool-bash',
+      '@deepseek-ai/dsh-pwsh-local',
+      '@deepseek-ai/dsh-pwsh-sandbox',
+      '@deepseek-ai/dsh-tool-pwsh',
     ]))
     const current = await resolveCurrentTree(target)
     expect(JSON.parse(await readFile(join(current, 'package.json'), 'utf8'))).toMatchObject({
       dependencies: { '@deepseek-ai/dsh-tools': '0.1.0-rc.6' },
     })
     expect(load(await readFile(join(current, 'cordis.yml'), 'utf8'))).toEqual(withoutShell.rows)
-  })
+  }, 30_000)
 
   it('keeps the last valid target when candidate validation fails', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-packs-'))

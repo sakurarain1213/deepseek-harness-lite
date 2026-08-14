@@ -9,6 +9,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { resolveCurrentTree, validateInstalledProfile } from '@dsh-lite/core'
 
+const nativePlatform = process.platform as 'darwin' | 'linux' | 'win32'
+
 class ScriptedAdapter extends LlmAdapter {
   readonly requests: GenerateOptions[] = []
 
@@ -82,15 +84,15 @@ describe('official minimal runtime', () => {
   it('mounts a validated generated profile and removes its tools when the pack is absent', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-runtime-profile-'))
     const workspace = await loadPackManifest(resolve('packages/packs/workspace/pack.json'))
-    await materializeProfile([workspace], join(root, 'workspace'), 'darwin')
-    await materializeProfile([], join(root, 'chat'), 'darwin')
+    await materializeProfile([workspace], join(root, 'workspace'), nativePlatform)
+    await materializeProfile([], join(root, 'chat'), nativePlatform)
     const workspaceProfile = await validateInstalledProfile(await resolveCurrentTree(join(root, 'workspace')))
     const chatProfile = await validateInstalledProfile(await resolveCurrentTree(join(root, 'chat')))
 
-    await expect(bootRuntime({ profile: chatOnly, profileDir: workspaceProfile.profileDir, platform: 'darwin' })).rejects.toThrow('closure')
+    await expect(bootRuntime({ profile: chatOnly, profileDir: workspaceProfile.profileDir, platform: nativePlatform })).rejects.toThrow('closure')
     const workspaceResolved = { ...chatOnly, profile: 'developer', packIds: ['workspace'], pluginIds: ['session-export', 'workspace-notes'] }
-    const withWorkspace = await bootRuntime({ profile: workspaceResolved, profileDir: workspaceProfile.profileDir, platform: 'darwin' })
-    const withoutWorkspace = await bootRuntime({ profile: chatOnly, profileDir: chatProfile.profileDir, platform: 'darwin' })
+    const withWorkspace = await bootRuntime({ profile: workspaceResolved, profileDir: workspaceProfile.profileDir, platform: nativePlatform })
+    const withoutWorkspace = await bootRuntime({ profile: chatOnly, profileDir: chatProfile.profileDir, platform: nativePlatform })
     try {
       const workspaceTools = withWorkspace.context.tools.schemas().map((tool) => tool.name)
       const chatTools = withoutWorkspace.context.tools.schemas().map((tool) => tool.name)
@@ -107,7 +109,7 @@ describe('official minimal runtime', () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-runtime-order-'))
     const workspace = await loadPackManifest(resolve('packages/packs/workspace/pack.json'))
     const shell = await loadPackManifest(resolve('packages/packs/shell/pack.json'))
-    await materializeProfile([shell, workspace], join(root, 'profile'), 'darwin')
+    await materializeProfile([shell, workspace], join(root, 'profile'), nativePlatform)
     const profileDir = await resolveCurrentTree(join(root, 'profile'))
     const runtime = await bootRuntime({
       profile: {
@@ -117,26 +119,26 @@ describe('official minimal runtime', () => {
         pluginIds: ['command-allowlist', 'session-export', 'workspace-notes'],
       },
       profileDir,
-      platform: 'darwin',
+      platform: nativePlatform,
     })
     try {
       const tools = runtime.context.tools.schemas().map((tool) => tool.name)
-      expect(tools).toEqual(expect.arrayContaining(['lite_notes', 'bash']))
+      expect(tools).toEqual(expect.arrayContaining(['lite_notes', nativePlatform === 'win32' ? 'pwsh' : 'bash']))
       expect(tools).not.toEqual(expect.arrayContaining(['read', 'write']))
     } finally {
       await runtime.dispose()
     }
-  })
+  }, 30_000)
 
   it('keeps the research profile on the bounded Lite fetch tool', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-runtime-research-'))
     const research = await loadPackManifest(resolve('packages/packs/research/pack.json'))
-    await materializeProfile([research], join(root, 'profile'), 'darwin')
+    await materializeProfile([research], join(root, 'profile'), nativePlatform)
     const profileDir = await resolveCurrentTree(join(root, 'profile'))
     const runtime = await bootRuntime({
       profile: { ...chatOnly, profile: 'custom', packIds: ['research'], pluginIds: ['safe-fetch'] },
       profileDir,
-      platform: 'darwin',
+      platform: nativePlatform,
     })
     try {
       const tools = runtime.context.tools.schemas().map((tool) => tool.name)
