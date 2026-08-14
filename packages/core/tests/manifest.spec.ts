@@ -1,7 +1,9 @@
+import { execFile } from 'node:child_process'
 import { access, cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 import { load } from 'js-yaml'
 import {
@@ -20,6 +22,7 @@ import { validateGeneratedProfile } from '../src/manifest.js'
 const packPath = (id: string): string => resolve(`packages/packs/${id}/pack.json`)
 const upstreamLockPath = resolve('compat/upstream-lock.json')
 const require = createRequire(import.meta.url)
+const execFileAsync = promisify(execFile)
 const coreClosure = [
   '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-agent',
@@ -273,13 +276,70 @@ describe('pack manifests', () => {
     const commands: { file: string; args: string[]; cwd?: string }[] = []
     await materializeProfile([shell], join(root, 'shell'), 'linux', {
       activate: false,
-      runAuditedCommand: async (file, args, cwd) => { commands.push({ file, args, cwd }) },
+      runAuditedCommand: async (file, args, cwd) => {
+        commands.push({ file, args, cwd })
+        if (file === 'corepack') {
+          const subprocessEntry = createRequire(join(cwd, 'package.json')).resolve('@deepseek-ai/dsh-subprocess-local')
+          const nodePtyRoot = dirname(dirname(createRequire(subprocessEntry).resolve('node-pty')))
+          await mkdir(join(nodePtyRoot, 'build', 'Release'), { recursive: true })
+          await writeFile(join(nodePtyRoot, 'build', 'Release', 'pty.node'), '')
+        }
+      },
     })
     expect(commands).toHaveLength(2)
-    expect(commands[0]).toMatchObject({ file: 'corepack', args: ['pnpm@10.15.0', 'rebuild', 'node-pty', '--dir', expect.any(String)] })
+    expect(commands[0]).toMatchObject({ file: 'corepack', args: ['pnpm@10.15.0', '--ignore-workspace', 'rebuild', 'node-pty', '--dir', expect.any(String)] })
     expect(commands[1]?.file).toBe(process.execPath)
     expect(commands[1]?.args[0]).toMatch(/dsh-subprocess-local\/scripts\/ensure-spawn-helper\.mjs$/)
     expect(commands.every(({ cwd }) => cwd?.includes('.stage-'))).toBe(true)
+  })
+
+  it.skipIf(process.platform === 'win32')('builds the audited node-pty package when a cold profile has no native binary', async () => {
+    const root = await mkdtemp(join(resolve('.'), '.dsh-lite-node-pty-cold-'))
+    const shell = await loadPackManifest(packPath('shell'))
+    const platform = 'linux'
+    let nodePtyRoot = ''
+    try {
+      await materializeProfile([shell], join(root, 'shell'), platform, {
+        activate: false,
+        install: async (candidate, args) => {
+          await execFileAsync('corepack', ['pnpm@10.15.0', ...args], {
+            cwd: candidate,
+            env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' },
+          })
+          const subprocessEntry = createRequire(join(candidate, 'package.json')).resolve('@deepseek-ai/dsh-subprocess-local')
+          nodePtyRoot = dirname(dirname(createRequire(subprocessEntry).resolve('node-pty')))
+          while (JSON.parse(await readFile(join(nodePtyRoot, 'package.json'), 'utf8')).name !== 'node-pty') {
+            nodePtyRoot = dirname(nodePtyRoot)
+          }
+          await rm(join(nodePtyRoot, 'prebuilds', `${process.platform}-${process.arch}`), { recursive: true, force: true })
+          await rm(join(nodePtyRoot, 'build'), { recursive: true, force: true })
+        },
+        runAuditedCommand: async (file, args, cwd) => {
+          await execFileAsync(file, args, { cwd, env: { ...process.env, COREPACK_ENABLE_PROJECT_SPEC: '0' } })
+        },
+      })
+      const profile = await resolveCurrentTree(join(root, 'shell'))
+      const installedSubprocess = createRequire(join(profile, 'package.json')).resolve('@deepseek-ai/dsh-subprocess-local')
+      const installedNodePtyRoot = dirname(dirname(createRequire(installedSubprocess).resolve('node-pty')))
+      await expect(access(join(installedNodePtyRoot, 'build', 'Release', 'pty.node'))).resolves.toBeUndefined()
+      const generatedPackage = JSON.parse(await readFile(join(profile, 'package.json'), 'utf8')) as { pnpm?: { onlyBuiltDependencies?: string[] } }
+      expect(generatedPackage.pnpm?.onlyBuiltDependencies).toEqual(['node-pty'])
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  }, 30_000)
+
+  it('does not grant native build permission to a prebuilt macOS shell profile', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-lite-node-pty-prebuilt-'))
+    try {
+      const shell = await loadPackManifest(packPath('shell'))
+      await materializeProfile([shell], join(root, 'shell'), 'darwin', { activate: false })
+      const profile = await resolveCurrentTree(join(root, 'shell'))
+      const generatedPackage = JSON.parse(await readFile(join(profile, 'package.json'), 'utf8')) as { pnpm?: { onlyBuiltDependencies?: string[] } }
+      expect(generatedPackage.pnpm?.onlyBuiltDependencies).toBeUndefined()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
   })
 
   it('repairs only the audited node-pty helper and proves a real staged subprocess before ready', async () => {

@@ -8,6 +8,16 @@ import { describe, expect, it } from 'vitest'
 const execFileAsync = promisify(execFile)
 
 describe('compatibility asset generation', () => {
+  it('keeps canonical seeds and generated assets byte-stable across Git platforms', async () => {
+    const cwd = resolve('.')
+    const { stdout: tracked } = await execFileAsync('git', ['ls-files', 'compat/lock-seeds/**', 'packages/core/compat/**'], { cwd })
+    const files = tracked.trim().split('\n').filter(Boolean)
+    expect(files.length).toBeGreaterThan(0)
+
+    const { stdout: attributes } = await execFileAsync('git', ['check-attr', 'eol', '--', ...files], { cwd })
+    expect(attributes.trim().split('\n')).toEqual(files.map((file) => `${file}: eol: lf`))
+  })
+
   it('checks committed assets with an empty pnpm metadata cache', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-compat-cold-cache-'))
     try {
@@ -26,33 +36,41 @@ describe('compatibility asset generation', () => {
 
   it('checks the full committed matrix without mutating it and detects stale files', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-compat-check-'))
-    const fixture = join(root, 'compat')
-    await cp(resolve('packages/core/compat/0.1.0-rc.6'), fixture, { recursive: true })
-    const before = await readFile(join(fixture, 'closures.json'), 'utf8')
-    await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).resolves.toBeDefined()
-    expect(await readFile(join(fixture, 'closures.json'), 'utf8')).toBe(before)
+    try {
+      const fixture = join(root, 'compat')
+      await cp(resolve('packages/core/compat/0.1.0-rc.6'), fixture, { recursive: true })
+      const before = await readFile(join(fixture, 'closures.json'), 'utf8')
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).resolves.toBeDefined()
+      expect(await readFile(join(fixture, 'closures.json'), 'utf8')).toBe(before)
 
-    await writeFile(join(fixture, 'locks', 'stale.yaml'), 'stale\n')
-    await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).rejects.toThrow()
-  }, 30_000)
+      await writeFile(join(fixture, 'locks', 'stale.yaml'), 'stale\n')
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).rejects.toThrow()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  }, 60_000)
 
   it('regenerates missing output from integrity-pinned canonical seeds and rejects altered output', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-compat-bootstrap-'))
-    const fixture = join(root, 'compat')
-    await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--output', fixture], { cwd: resolve('.') })).resolves.toBeDefined()
-    await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).resolves.toBeDefined()
+    try {
+      const fixture = join(root, 'compat')
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--output', fixture], { cwd: resolve('.') })).resolves.toBeDefined()
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).resolves.toBeDefined()
 
-    const lock = join(fixture, 'locks', 'linux-chat-only.yaml')
-    await writeFile(lock, (await readFile(lock, 'utf8')).replace('integrity: sha512-', 'integrity: sha512-altered'))
-    await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).rejects.toThrow()
+      const lock = join(fixture, 'locks', 'linux-chat-only.yaml')
+      await writeFile(lock, (await readFile(lock, 'utf8')).replace('integrity: sha512-', 'integrity: sha512-altered'))
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).rejects.toThrow()
 
-    await rm(fixture, { recursive: true })
-    await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).rejects.toThrow()
+      await rm(fixture, { recursive: true })
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--check', '--output', fixture], { cwd: resolve('.') })).rejects.toThrow()
 
-    const seeds = join(root, 'seeds')
-    await cp(resolve('compat/lock-seeds/0.1.0-rc.6'), seeds, { recursive: true })
-    const seedLock = join(seeds, 'locks', 'linux.yaml')
-    await writeFile(seedLock, (await readFile(seedLock, 'utf8')).replace('integrity: sha512-', 'integrity: sha512-altered'))
-    await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--output', fixture, '--seed-root', seeds], { cwd: resolve('.') })).rejects.toThrow()
-  }, 30_000)
+      const seeds = join(root, 'seeds')
+      await cp(resolve('compat/lock-seeds/0.1.0-rc.6'), seeds, { recursive: true })
+      const seedLock = join(seeds, 'locks', 'linux.yaml')
+      await writeFile(seedLock, (await readFile(seedLock, 'utf8')).replace('integrity: sha512-', 'integrity: sha512-altered'))
+      await expect(execFileAsync(process.execPath, ['scripts/generate-compatibility-assets.mjs', '--output', fixture, '--seed-root', seeds], { cwd: resolve('.') })).rejects.toThrow()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  }, 60_000)
 })

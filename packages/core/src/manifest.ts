@@ -358,11 +358,12 @@ async function prepareNodePty(profileDir: string, platform: Platform, options: V
     await execFileAsync(file, args, { cwd })
   })
   if (platform === 'linux' && (process.platform === 'linux' || options.runAuditedCommand)) {
-    const prebuild = join(packageRoot, 'prebuilds', `${platform}-${process.arch}`)
+    const prebuild = join(packageRoot, 'prebuilds', `${platform}-${process.arch}`, 'pty.node')
     const built = join(packageRoot, 'build', 'Release', 'pty.node')
     const hasNative = await access(prebuild).then(() => true, () => access(built).then(() => true, () => false))
     if (!hasNative) {
-      await run('corepack', ['pnpm@10.15.0', 'rebuild', 'node-pty', '--dir', profileDir], profileDir)
+      await run('corepack', ['pnpm@10.15.0', '--ignore-workspace', 'rebuild', 'node-pty', '--dir', profileDir], profileDir)
+      await access(built).catch(() => { throw new Error('audited node-pty build did not produce a native module') })
     }
   }
   const subprocess = await resolveProfilePackage(profileDir, '@deepseek-ai/dsh-subprocess-local')
@@ -445,10 +446,13 @@ export async function validateInstalledProfile(profileDir: string, options: Vali
     dependencies: z.record(z.string(), DependencyVersionSchema),
     pnpm: z.object({
       supportedArchitectures: z.object({ os: z.array(z.enum(['darwin', 'linux', 'win32'])).length(1), cpu: z.array(z.string()).length(1) }).strict(),
+      onlyBuiltDependencies: z.tuple([z.literal('node-pty')]).optional(),
     }).strict(),
   }).strict().parse(packageJson)
   if (parsedPackage.pnpm.supportedArchitectures.os[0] !== compatibility.platform) throw new Error('installed package platform does not match compatibility closure')
   if (parsedPackage.pnpm.supportedArchitectures.cpu[0] !== parsedState.arch) throw new Error('installed package architecture does not match profile state')
+  const expectsNodePtyBuild = compatibility.platform === 'linux' && compatibility.dependencies['@deepseek-ai/dsh-subprocess-local'] !== undefined
+  if (expectsNodePtyBuild !== (parsedPackage.pnpm.onlyBuiltDependencies?.[0] === 'node-pty')) throw new Error('installed native build allowlist does not match compatibility closure')
   if (sha256(canonicalDependencies(parsedPackage.dependencies)) !== compatibility.dependenciesSha256) throw new Error('installed package manifest does not match compatibility closure')
   const installedLock = await readFile(join(profileDir, 'pnpm-lock.yaml'), 'utf8')
   if (sha256(installedLock) !== compatibility.lockSha256) throw new Error('installed lock does not match compatibility template')
@@ -595,7 +599,10 @@ export async function materializeProfile(
     private: true,
     type: 'module',
     dependencies: Object.fromEntries(packageNames.map((name) => [name, dependencies[name]])),
-    pnpm: { supportedArchitectures: { os: [platform], cpu: [process.arch] } },
+    pnpm: {
+      supportedArchitectures: { os: [platform], cpu: [process.arch] },
+      ...(platform === 'linux' && dependencies['@deepseek-ai/dsh-subprocess-local'] ? { onlyBuiltDependencies: ['node-pty'] } : {}),
+    },
   }
   const cordis = GeneratedCordisSchema.parse(rows)
   const target = resolve(targetDir)
