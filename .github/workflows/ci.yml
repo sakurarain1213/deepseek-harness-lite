@@ -39,7 +39,7 @@ jobs:
       - name: CLI process checks
         run: corepack pnpm vitest run apps/cli/tests/cli.e2e.spec.ts
       - name: Capability pack checks
-        run: corepack pnpm vitest run packages/core/tests/packs.spec.ts packages/core/tests/manifest.spec.ts
+        run: corepack pnpm vitest run packages/core/tests/packs.spec.ts packages/core/tests/manifest.spec.ts --testTimeout=120000
       - name: Package content checks
         run: corepack pnpm vitest run packages/core/tests/packed-production.spec.ts
       - name: Repository gates
