@@ -33,8 +33,8 @@ WizardStyle=modern
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{userprograms}\DeepSeek Harness Lite Terminal"; Filename: "{cmd}"; Parameters: "/K set ""PATH={app};%PATH%"" && cd /d ""{userprofile}"" && echo Run: dsh-lite init --config ""{app}\examples\chat-only\lite.config.json"" --home .dsh-lite"; WorkingDir: "{userprofile}"
+Name: "{userprograms}\DeepSeek Harness Lite Terminal"; Filename: "{cmd}"; Parameters: "/K set ""PATH={app};%PATH%"" && cd /d ""{%USERPROFILE}"" && echo Run: dsh-lite init --config ""{app}\examples\chat-only\lite.config.json"" --home .dsh-lite"; WorkingDir: "{%USERPROFILE}"
 Name: "{userprograms}\DeepSeek Harness Lite README"; Filename: "{app}\README.md"
 
 [Run]
-Filename: "{cmd}"; Parameters: "/K set ""PATH={app};%PATH%"" && cd /d ""{userprofile}"" && echo Run: dsh-lite init --config ""{app}\examples\chat-only\lite.config.json"" --home .dsh-lite"; Description: "Open the DeepSeek Harness Lite terminal"; Flags: postinstall nowait skipifsilent unchecked
+Filename: "{cmd}"; Parameters: "/K set ""PATH={app};%PATH%"" && cd /d ""{%USERPROFILE}"" && echo Run: dsh-lite init --config ""{app}\examples\chat-only\lite.config.json"" --home .dsh-lite"; Description: "Open the DeepSeek Harness Lite terminal"; Flags: postinstall nowait skipifsilent unchecked
