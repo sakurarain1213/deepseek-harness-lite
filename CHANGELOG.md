@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Developer-preview `dsh-lite` CLI with `init`, `doctor`, `inspect`, and one-shot `run` commands.
 - Schema version 1 configuration with `chat-only` and `developer` profiles.
 - Declarative `workspace`, `shell`, and `research` capability packs. The v0.1.0 workspace and research packs intentionally omit upstream generic filesystem/search and `web_fetch` tools until their containment and SSRF boundaries can be proven.
-- Five repository plugin contracts covering health diagnostics, safe fetch, workspace notes, command allowlisting, and session export.
+- Five release-gated bundled plugins covering health diagnostics, safe fetch, workspace notes, command allowlisting, and session export.
 - Exact upstream stable lock and deterministic per-platform compatibility closures for every pack combination.
 - Bilingual repository documentation, security and contribution policies, upstream attribution, and Windows promotion criteria.
 

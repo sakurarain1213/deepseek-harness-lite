@@ -58,7 +58,7 @@ v0.1.0 有意不在 `workspace` 中加载上游通用文件系统或搜索工具
 | `@dsh-lite/plugin-command-allowlist` | shell 执行策略 | 仅接受简单 token、拒绝 shell 语法；shell 能力包只默认允许只读的 `pwd`/`git status`/`git diff`/`git log` |
 | `@dsh-lite/plugin-session-export` | Markdown 或 JSON session 投影 | 仅导出显式允许的事件字段 |
 
-在发布证据固定前，这些由仓库维护的包仍是 `listed` 候选项，不构成推荐。后续只包含证据的发布提交会将其晋级为 `bundled`；外部 catalog 条目根据证据分别标为 `verified`、`listed` 或 `blocked`。提交流程见 [插件开发文档](docs/plugin-authoring.md)。
+五个仓库自有包现均为 `bundled`：安装、构建与激活证据绑定到源码提交 `01657c92089aca576d8795663a218acada1b0d47`。外部 catalog 条目根据证据分别标为 `verified`、`listed` 或 `blocked`。提交流程见 [插件开发文档](docs/plugin-authoring.md)。
 
 从源码 checkout 安装时，这些体积较小的仓库插件包会一起安装，使 Runtime 可以使用静态且可审查的 import。安装不代表激活：resolved profile 只会挂载被直接选择或由已选能力包贡献的插件。某个重能力包未被选择时，它对应的官方 Harness 依赖会从生成 profile 中真正移除。
 

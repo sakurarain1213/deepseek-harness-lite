@@ -2,15 +2,25 @@
   "schemaVersion": 1,
   "channel": "stable",
   "evidenceKind": "release-gate",
-  "liteCommit": "unavailable",
+  "liteCommit": "01657c92089aca576d8795663a218acada1b0d47",
   "upstreamVersion": "0.1.0-rc.6",
-  "platform": "unmeasured",
-  "arch": "unmeasured",
-  "nodeVersion": "unmeasured",
+  "platform": "darwin",
+  "arch": "arm64",
+  "nodeVersion": "22.22.3",
   "packageManager": "pnpm@10.15.0",
   "selection": {
-    "packs": [],
-    "plugins": []
+    "packs": [
+      "workspace",
+      "shell",
+      "research"
+    ],
+    "plugins": [
+      "command-allowlist",
+      "health",
+      "safe-fetch",
+      "session-export",
+      "workspace-notes"
+    ]
   },
   "packageInventory": {
     "@deepseek-ai/cordis": "4.0.1",
@@ -18,29 +28,29 @@
     "@deepseek-ai/dsh-agent": "0.1.0-rc.6",
     "@deepseek-ai/dsh-agent-loop": "0.1.0-rc.6",
     "@deepseek-ai/dsh-attachment": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-brand": "0.1.0-rc.6",
     "@deepseek-ai/dsh-bash-local": "0.1.0-rc.6",
     "@deepseek-ai/dsh-bash-sandbox": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-brand": "0.1.0-rc.6",
     "@deepseek-ai/dsh-code-runtime": "0.1.0-rc.6",
     "@deepseek-ai/dsh-fs": "0.1.0-rc.6",
     "@deepseek-ai/dsh-fs-local": "0.1.0-rc.6",
     "@deepseek-ai/dsh-fs-observation-policy": "0.1.0-rc.6",
     "@deepseek-ai/dsh-home-paths": "0.1.0-rc.6",
     "@deepseek-ai/dsh-invariants": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-jobs": "0.1.0-rc.6",
     "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-jobs": "0.1.0-rc.6",
     "@deepseek-ai/dsh-output-retention": "0.1.0-rc.6",
     "@deepseek-ai/dsh-pwsh-local": "0.1.0-rc.6",
     "@deepseek-ai/dsh-pwsh-sandbox": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-sandbox": "0.1.0-rc.6",
     "@deepseek-ai/dsh-sandbox-local": "0.1.0-rc.6",
     "@deepseek-ai/dsh-sandbox-policy": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-sandbox": "0.1.0-rc.6",
     "@deepseek-ai/dsh-scope": "0.1.0-rc.6",
     "@deepseek-ai/dsh-session": "0.1.0-rc.6",
     "@deepseek-ai/dsh-session-persistence": "0.1.0-rc.6",
     "@deepseek-ai/dsh-settings": "0.1.0-rc.6",
-    "@deepseek-ai/dsh-shell": "0.1.0-rc.6",
     "@deepseek-ai/dsh-shell-env": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-shell": "0.1.0-rc.6",
     "@deepseek-ai/dsh-spill": "0.1.0-rc.6",
     "@deepseek-ai/dsh-subprocess": "0.1.0-rc.6",
     "@deepseek-ai/dsh-subprocess-local": "0.1.0-rc.6",
@@ -58,11 +68,116 @@
     "@deepseek-ai/dsh-web-fetch-http": "0.1.0-rc.6",
     "@deepseek-ai/schemastery": "3.18.1"
   },
-  "commands": [],
-  "result": "unavailable",
-  "measured": false,
-  "timestamp": "2026-08-14T00:00:00.000Z",
-  "diagnostics": [
-    "Committed placeholder: CI has not yet supplied a platform compatibility measurement."
+  "commands": [
+    "CI=1 corepack pnpm@10.15.0 install --frozen-lockfile",
+    "corepack pnpm@10.15.0 test",
+    "corepack pnpm@10.15.0 typecheck",
+    "corepack pnpm@10.15.0 lint",
+    "corepack pnpm@10.15.0 build",
+    "corepack pnpm@10.15.0 verify:repo",
+    "corepack pnpm@10.15.0 check:secrets",
+    "corepack pnpm@10.15.0 check:licenses",
+    "corepack pnpm@10.15.0 compat:check",
+    "corepack pnpm@10.15.0 measure:install"
+  ],
+  "commandResults": [
+    {
+      "id": "install",
+      "command": "CI=1 corepack pnpm@10.15.0 install --frozen-lockfile",
+      "startedAt": "2026-08-14T01:52:16.144Z",
+      "finishedAt": "2026-08-14T01:52:16.740Z",
+      "durationMs": 596,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "test",
+      "command": "corepack pnpm@10.15.0 test",
+      "startedAt": "2026-08-14T01:52:16.740Z",
+      "finishedAt": "2026-08-14T01:52:59.065Z",
+      "durationMs": 42325,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "typecheck",
+      "command": "corepack pnpm@10.15.0 typecheck",
+      "startedAt": "2026-08-14T01:52:59.065Z",
+      "finishedAt": "2026-08-14T01:52:59.317Z",
+      "durationMs": 252,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "lint",
+      "command": "corepack pnpm@10.15.0 lint",
+      "startedAt": "2026-08-14T01:52:59.317Z",
+      "finishedAt": "2026-08-14T01:52:59.622Z",
+      "durationMs": 305,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "build",
+      "command": "corepack pnpm@10.15.0 build",
+      "startedAt": "2026-08-14T01:52:59.622Z",
+      "finishedAt": "2026-08-14T01:52:59.865Z",
+      "durationMs": 243,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "repository",
+      "command": "corepack pnpm@10.15.0 verify:repo",
+      "startedAt": "2026-08-14T01:52:59.865Z",
+      "finishedAt": "2026-08-14T01:53:00.080Z",
+      "durationMs": 215,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "secrets",
+      "command": "corepack pnpm@10.15.0 check:secrets",
+      "startedAt": "2026-08-14T01:53:00.080Z",
+      "finishedAt": "2026-08-14T01:53:04.339Z",
+      "durationMs": 4259,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "licenses",
+      "command": "corepack pnpm@10.15.0 check:licenses",
+      "startedAt": "2026-08-14T01:53:04.339Z",
+      "finishedAt": "2026-08-14T01:53:04.553Z",
+      "durationMs": 214,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "compatibility",
+      "command": "corepack pnpm@10.15.0 compat:check",
+      "startedAt": "2026-08-14T01:53:04.553Z",
+      "finishedAt": "2026-08-14T01:53:09.576Z",
+      "durationMs": 5023,
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "id": "install-size",
+      "command": "corepack pnpm@10.15.0 measure:install",
+      "startedAt": "2026-08-14T01:53:09.576Z",
+      "finishedAt": "2026-08-14T01:53:29.150Z",
+      "durationMs": 19574,
+      "exitCode": 0,
+      "result": "passed"
+    }
+  ],
+  "result": "passed",
+  "measured": true,
+  "timestamp": "2026-08-14T01:53:29.150Z",
+  "limitations": [
+    "This release gate records one native platform and architecture; it is not a universal compatibility claim.",
+    "Windows remains planned/experimental until its native CI lane is blocking and passes.",
+    "The real API smoke is a separate bounded maintainer check and is not run by public CI without credentials."
   ]
 }

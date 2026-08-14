@@ -58,7 +58,7 @@ The repository's five plugins demonstrate separate extension and security bounda
 | `@dsh-lite/plugin-command-allowlist` | Shell execution policy | Accepts only simple tokens, denies shell syntax, and gives the shell pack a narrow read-only `pwd`/`git status`/`git diff`/`git log` policy |
 | `@dsh-lite/plugin-session-export` | Markdown or JSON session projection | Exports an explicit allowlist of event fields |
 
-Before release evidence is pinned, these repository-owned packages remain `listed` candidates rather than recommendations. A later evidence-only release commit promotes them to `bundled`; external catalog entries use separate `verified`, `listed`, or `blocked` states. See [plugin authoring and catalog submission](docs/plugin-authoring.md).
+All five repository-owned packages are `bundled`: install, build, and activation evidence is pinned to source commit `01657c92089aca576d8795663a218acada1b0d47`. External catalog entries use separate `verified`, `listed`, or `blocked` states. See [plugin authoring and catalog submission](docs/plugin-authoring.md).
 
 The source checkout installs these small repository plugin packages together so the Runtime can use static, reviewable imports. Installation does not imply activation: a resolved profile mounts only the plugins selected directly or contributed by its selected packs. Official Harness dependencies for heavier capabilities are physically absent from a generated profile when their pack is not selected.
 
