@@ -29,37 +29,46 @@ DeepSeek Harness Lite 保留官方 Harness 的 agent loop、session 模型、工
 | GUI 或桌面应用 | 没有 |
 | 交互式聊天/REPL | 没有 |
 | 支持系统 | Windows、macOS、Linux |
-| 当前发行方式 | 源码 checkout；暂时没有 npm 包、Windows `.exe` 或 macOS app |
+| 当前发行方式 | 原生 CLI 包：Windows `.zip`/`.exe`、macOS `.tar.gz`/`.dmg`、Linux `.tar.gz` |
 
 Lite 适合希望在终端或脚本中使用小型、可检查 Harness 运行时的用户。它目前不是图形聊天客户端。
 
 ## Quick Start
 
-前置要求：Git、Node.js `^22.19.0` 或 `>=24`、Corepack。第一次 `init` 会下载并验证当前平台的精确运行时闭包，可能需要几分钟。Windows 只有启用 `shell` 能力包时才需要 PowerShell 7（`pwsh`）。
+从 [GitHub 最新 Release](https://github.com/sakurarain1213/deepseek-harness-lite/releases/latest) 下载对应系统的包。发布包已内置 Node.js 和 Corepack，不需要安装 Git、Node.js 或 pnpm。第一次 `init` 会下载并验证当前平台精确的 Harness 闭包，因此需要联网，可能花几分钟。Windows 只有启用 `shell` 能力包时才需要 PowerShell 7（`pwsh`）。
 
-### Windows PowerShell
+### Windows x64
+
+运行 `.exe` 安装器，然后从开始菜单打开 **DeepSeek Harness Lite Terminal**：
 
 ```powershell
-git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
-Set-Location deepseek-harness-lite
-corepack pnpm@10.15.0 install --frozen-lockfile
-corepack pnpm@10.15.0 build
-node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+dsh-lite init --config "$env:LOCALAPPDATA\Programs\DeepSeek Harness Lite\examples\chat-only\lite.config.json" --home "$HOME\.dsh-lite-home"
+dsh-lite doctor --home "$HOME\.dsh-lite-home"
+```
+
+如果使用便携 ZIP，解压后在该目录打开 PowerShell，并把 `dsh-lite` 换成 `./dsh-lite.cmd`：
+
+```powershell
+.\dsh-lite.cmd init --config .\examples\chat-only\lite.config.json --home "$HOME\.dsh-lite-home"
+.\dsh-lite.cmd doctor --home "$HOME\.dsh-lite-home"
 ```
 
 ### macOS 或 Linux
 
+下载 CPU 对应的压缩包（Intel/AMD 选 `x64`，Apple Silicon 选 `arm64`），解压并进入目录：
+
 ```sh
-git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
-cd deepseek-harness-lite
-corepack pnpm@10.15.0 install --frozen-lockfile
-corepack pnpm@10.15.0 build
-node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+tar -xzf deepseek-harness-lite-v0.1.1-<platform>-<arch>.tar.gz
+cd deepseek-harness-lite-v0.1.1-<platform>-<arch>
+./dsh-lite init --config examples/chat-only/lite.config.json --home "$HOME/.dsh-lite-home"
+./dsh-lite doctor --home "$HOME/.dsh-lite-home"
 ```
 
+macOS `.dmg` 和 `.tar.gz` 中是同一套 CLI；先把 DMG 内容复制到可写目录，再运行 `./dsh-lite`。当前社区包没有签名，因此 Windows SmartScreen 或 macOS Gatekeeper 可能提示风险。请先用 `SHA256SUMS.txt` 校验文件；确切的签名状态见[安装包形式](#安装包形式)。
+
 `init` 应输出 `initialized ...`。`doctor` 应返回 JSON，其中 `"status": "ok"`，并且每个检查都是 `pass`。这两个命令都不需要模型密钥。
+
+下文用 `dsh-lite` 表示 Windows 安装版命令。Windows 便携 ZIP 请使用 `.\dsh-lite.cmd`；macOS/Linux 请使用 `./dsh-lite`；源码 checkout 使用 `node apps/cli/dist/src/bin.js`。
 
 <p align="center">
   <img src="assets/quick-start.png" alt="DeepSeek Harness Lite Quick Start 终端示例" width="900">
@@ -77,7 +86,7 @@ Windows PowerShell：
 $env:DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 $env:DEEPSEEK_API_KEY = "<your-key>"
 $env:DEEPSEEK_MODEL = "deepseek-chat"
-node apps/cli/dist/src/bin.js run "只回复：ready" --home .dsh-lite-home
+dsh-lite run "只回复：ready" --home "$HOME\.dsh-lite-home"
 ```
 
 macOS/Linux：
@@ -86,7 +95,7 @@ macOS/Linux：
 export DEEPSEEK_BASE_URL='https://api.deepseek.com/v1'
 export DEEPSEEK_API_KEY='<your-key>'
 export DEEPSEEK_MODEL='deepseek-chat'
-node apps/cli/dist/src/bin.js run '只回复：ready' --home .dsh-lite-home
+./dsh-lite run '只回复：ready' --home "$HOME/.dsh-lite-home"
 ```
 
 stdout 应直接显示模型回答，例如 `ready`。`DEEPSEEK_BASE_URL` 可以是以 `/v1` 结尾的 API root，也可以是完整 `/chat/completions` URL。代码中的 `DEEPSEEK_MODEL` 默认值是 `deepseek-v4-flash`；如果 endpoint 使用其他模型名，请显式设置该变量。不要把凭据写入 `lite.config.json`、生成 profile、fixture、日志或提交记录。
@@ -115,9 +124,9 @@ stdout 应直接显示模型回答，例如 `ready`。`DEEPSEEK_BASE_URL` 可以
 仓库内置的 developer profile 会启用有边界的 workspace notes、脱敏 session export 和 health 插件：
 
 ```sh
-node apps/cli/dist/src/bin.js init --config examples/developer/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
+dsh-lite init --config examples/developer/lite.config.json --home .dsh-lite-home
+dsh-lite doctor --home .dsh-lite-home
+dsh-lite inspect --home .dsh-lite-home
 ```
 
 需要自定义时，可以创建下面的配置，再把文件路径传给 `init`：
@@ -167,9 +176,31 @@ node "$LITE_REPO/apps/cli/dist/src/bin.js" run '用三点总结这个项目' --h
 
 ## 安装包形式
 
-v0.1.0 有意保持 source-only。一个简单的 wrapper 压缩包仍然依赖 Node.js、pnpm、平台专用官方包、生成的 Cordis 资源和 native helper，因此把它称为 `.exe` 或 macOS app 会误导用户。
+从 v0.1.1 开始，Release 附件会在对应原生平台构建并完成冒烟测试：
 
-未来的二进制/安装器必须在每个原生 CI 平台构建，保留 dynamic ESM 与运行时资源，正确处理 native dependency，包含 license/NOTICE，发布 checksum，并通过安装后 smoke test。macOS 还需要分别验证架构，以及签名/notarization，才能提供正常的终端用户体验。在这些门禁完成前，GitHub Release 的源码归档和上面的 checkout 步骤是受支持的安装方式。
+| 系统 | 附件 | 内置运行时 |
+| --- | --- | --- |
+| Windows x64 | 便携 `.zip`、Inno Setup `.exe` | Node.js 22.19.0 + Corepack |
+| macOS Intel | 便携 `.tar.gz`、`.dmg` | Node.js 22.19.0 + Corepack |
+| macOS Apple Silicon | 便携 `.tar.gz`、`.dmg` | Node.js 22.19.0 + Corepack |
+| Linux x64 | 便携 `.tar.gz` | Node.js 22.19.0 + Corepack |
+
+CI 会生成没有符号链接或本机绝对 junction 的部署目录，把它移动到 checkout 之外，再通过发布包启动器依次运行 `init`、`doctor` 和 `inspect`，全部通过才发布。附件包含中英文 README、示例、项目图片、MIT 许可证、NOTICE 和 SHA-256 校验文件。它们是 CLI 发行包，不是 GUI 应用，也不是单文件二进制程序。
+
+当前社区构建**没有代码签名**。Windows 安装器可能触发 SmartScreen；macOS 镜像没有 notarization，可能需要在“隐私与安全性”中手动允许。处理警告前，请先核对 SHA-256，并确认文件来自本仓库 Release 页面。
+
+### 从源码构建
+
+贡献者和暂未提供附件的架构仍可从源码安装。该方式需要 Git、Node.js `^22.19.0` 或 `>=24`、Corepack：
+
+```sh
+git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
+cd deepseek-harness-lite
+corepack pnpm@10.15.0 install --frozen-lockfile
+corepack pnpm@10.15.0 build
+node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
+node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+```
 
 ## Lite 改变了什么
 

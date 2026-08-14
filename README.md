@@ -29,37 +29,46 @@ DeepSeek Harness Lite keeps the official Harness agent loop, session model, tool
 | GUI or desktop app | No |
 | Interactive chat/REPL | No |
 | Supported systems | Windows, macOS, and Linux |
-| Current distribution | Source checkout; no npm package, Windows `.exe`, or macOS app yet |
+| Current distribution | Native CLI packages: Windows `.zip`/`.exe`, macOS `.tar.gz`/`.dmg`, and Linux `.tar.gz` |
 
 Lite is for users who want a small, inspectable Harness runtime in a terminal or script. It is not currently a graphical chat client.
 
 ## Quick start
 
-Requirements: Git, Node.js `^22.19.0` or `>=24`, and Corepack. The first `init` downloads and validates the exact platform-specific runtime closure, so it may take a few minutes. PowerShell 7 (`pwsh`) is needed on Windows only when the `shell` pack is enabled.
+Download the package for your system from the [latest GitHub Release](https://github.com/sakurarain1213/deepseek-harness-lite/releases/latest). Packaged builds include Node.js and Corepack; you do not need Git, Node.js, or pnpm. The first `init` downloads and validates the exact platform-specific Harness closure, so it needs network access and may take a few minutes. PowerShell 7 (`pwsh`) is needed on Windows only when the `shell` pack is enabled.
 
-### Windows PowerShell
+### Windows x64
+
+Use the `.exe` installer, open **DeepSeek Harness Lite Terminal** from the Start menu, and run:
 
 ```powershell
-git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
-Set-Location deepseek-harness-lite
-corepack pnpm@10.15.0 install --frozen-lockfile
-corepack pnpm@10.15.0 build
-node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+dsh-lite init --config "$env:LOCALAPPDATA\Programs\DeepSeek Harness Lite\examples\chat-only\lite.config.json" --home "$HOME\.dsh-lite-home"
+dsh-lite doctor --home "$HOME\.dsh-lite-home"
+```
+
+For the portable ZIP, extract it, open PowerShell in the extracted folder, and use `./dsh-lite.cmd` instead of `dsh-lite`:
+
+```powershell
+.\dsh-lite.cmd init --config .\examples\chat-only\lite.config.json --home "$HOME\.dsh-lite-home"
+.\dsh-lite.cmd doctor --home "$HOME\.dsh-lite-home"
 ```
 
 ### macOS or Linux
 
+Download the archive matching your CPU (`x64` for Intel/AMD, `arm64` for Apple Silicon), extract it, and enter the extracted directory:
+
 ```sh
-git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
-cd deepseek-harness-lite
-corepack pnpm@10.15.0 install --frozen-lockfile
-corepack pnpm@10.15.0 build
-node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+tar -xzf deepseek-harness-lite-v0.1.1-<platform>-<arch>.tar.gz
+cd deepseek-harness-lite-v0.1.1-<platform>-<arch>
+./dsh-lite init --config examples/chat-only/lite.config.json --home "$HOME/.dsh-lite-home"
+./dsh-lite doctor --home "$HOME/.dsh-lite-home"
 ```
 
+The macOS `.dmg` contains the same CLI directory as the `.tar.gz`; copy its contents to a writable folder before running `./dsh-lite`. Because the community builds are unsigned, Windows SmartScreen or macOS Gatekeeper may show a warning. Verify the download against `SHA256SUMS.txt`; see [Installation format](#installation-format) for the exact security and signing status.
+
 `init` should print `initialized ...`. `doctor` should return JSON with `"status": "ok"` and every check set to `pass`. Neither command needs a model key.
+
+Commands below use `dsh-lite` for the installed Windows build. For a portable Windows ZIP, use `.\dsh-lite.cmd`; for macOS/Linux, use `./dsh-lite`. Source-checkout users use `node apps/cli/dist/src/bin.js`.
 
 <p align="center">
   <img src="assets/quick-start.png" alt="DeepSeek Harness Lite Quick Start terminal example" width="900">
@@ -77,7 +86,7 @@ Windows PowerShell:
 $env:DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 $env:DEEPSEEK_API_KEY = "<your-key>"
 $env:DEEPSEEK_MODEL = "deepseek-chat"
-node apps/cli/dist/src/bin.js run "Reply with exactly: ready" --home .dsh-lite-home
+dsh-lite run "Reply with exactly: ready" --home "$HOME\.dsh-lite-home"
 ```
 
 macOS/Linux:
@@ -86,7 +95,7 @@ macOS/Linux:
 export DEEPSEEK_BASE_URL='https://api.deepseek.com/v1'
 export DEEPSEEK_API_KEY='<your-key>'
 export DEEPSEEK_MODEL='deepseek-chat'
-node apps/cli/dist/src/bin.js run 'Reply with exactly: ready' --home .dsh-lite-home
+./dsh-lite run 'Reply with exactly: ready' --home "$HOME/.dsh-lite-home"
 ```
 
 The expected stdout is the model answer, for example `ready`. `DEEPSEEK_BASE_URL` may be an API root ending in `/v1` or the full `/chat/completions` URL. The code default for `DEEPSEEK_MODEL` is `deepseek-v4-flash`; set the variable explicitly when your endpoint uses a different model name. Never put credentials in `lite.config.json`, generated profiles, fixtures, logs, or commits.
@@ -115,9 +124,9 @@ Paths are resolved from the current working directory. `--home` stores generated
 The included developer profile enables bounded workspace notes, sanitized session export, and the health plugin:
 
 ```sh
-node apps/cli/dist/src/bin.js init --config examples/developer/lite.config.json --home .dsh-lite-home
-node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
-node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
+dsh-lite init --config examples/developer/lite.config.json --home .dsh-lite-home
+dsh-lite doctor --home .dsh-lite-home
+dsh-lite inspect --home .dsh-lite-home
 ```
 
 For a custom selection, create a config like this and run `init` with its path:
@@ -167,9 +176,31 @@ node "$LITE_REPO/apps/cli/dist/src/bin.js" run 'Summarize this project' --home "
 
 ## Installation format
 
-v0.1.0 intentionally remains source-only. A quick wrapper archive would still require Node.js, pnpm, platform-specific official packages, generated Cordis resources, and native helpers, so labeling it an `.exe` or macOS app would be misleading.
+Starting with v0.1.1, Release assets are produced and smoke-tested on their native platform:
 
-A future binary/installer release must be produced on each native CI platform, preserve dynamic ESM and runtime assets, handle native dependencies, include license/NOTICE material, publish checksums, and pass installed-artifact smoke tests. macOS distribution also requires separate architecture validation plus signing/notarization for a normal end-user experience. Until those gates exist, the GitHub Release source archives and the checkout steps above are the supported installation path.
+| System | Assets | Included runtime |
+| --- | --- | --- |
+| Windows x64 | Portable `.zip`, Inno Setup `.exe` | Node.js 22.19.0 + Corepack |
+| macOS Intel | Portable `.tar.gz`, `.dmg` | Node.js 22.19.0 + Corepack |
+| macOS Apple Silicon | Portable `.tar.gz`, `.dmg` | Node.js 22.19.0 + Corepack |
+| Linux x64 | Portable `.tar.gz` | Node.js 22.19.0 + Corepack |
+
+CI prepares a link-free deployment, moves it away from the checkout, and runs `init`, `doctor`, and `inspect` through the packaged launcher before publishing it. The artifacts include both READMEs, examples, the project image, MIT license, NOTICE, and checksums. They are CLI distributions, not GUI apps or single-file binaries.
+
+The current community builds are **not code-signed**. The Windows installer may trigger SmartScreen. The macOS images are not notarized and may require the user to approve the download in Privacy & Security. Do not bypass a warning before checking the SHA-256 checksum and confirming that the file came from this repository's Release page.
+
+### Build from source
+
+Contributors and unsupported architectures can still build from source. This path requires Git, Node.js `^22.19.0` or `>=24`, and Corepack:
+
+```sh
+git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
+cd deepseek-harness-lite
+corepack pnpm@10.15.0 install --frozen-lockfile
+corepack pnpm@10.15.0 build
+node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
+node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+```
 
 ## What Lite changes
 

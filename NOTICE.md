@@ -24,6 +24,8 @@ At the time of this notice, this repository does not vendor or adapt DeepSeek Ha
 
 Third-party dependencies retain their respective copyrights and licenses. The release-time license audit checks the installed dependency manifests; this notice does not replace individual package notices or licenses.
 
+Native Release assets bundle the unmodified executable distribution of [Node.js](https://nodejs.org/) and its bundled [Corepack](https://github.com/nodejs/corepack) command. Node.js is distributed under the MIT License with additional notices for bundled dependencies; its complete distribution license is included as `runtime/NODE-LICENSE`. Corepack is MIT-licensed and its `LICENSE.md` remains inside the bundled package directory.
+
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) is adapted from the Contributor Covenant, version 2.1, which is available under the [Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by/4.0/).
 
 “DeepSeek” and “DeepSeek Harness” are used only to identify the upstream project. No trademark rights are granted by this repository's MIT License.

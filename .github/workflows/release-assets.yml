@@ -1,0 +1,154 @@
+name: Release assets
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the v prefix
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64
+            os: windows-latest
+            platform: windows
+            arch: x64
+          - label: Linux x64
+            os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - label: macOS Intel
+            os: macos-13
+            platform: macos
+            arch: x64
+          - label: macOS Apple Silicon
+            os: macos-14
+            platform: macos
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ inputs.version || github.ref_name }}
+      PLATFORM: ${{ matrix.platform }}
+      ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+      - name: Normalize version and assert architecture (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $version = $env:VERSION -replace '^v', ''
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          if ((node -p process.arch) -ne $env:ARCH) { throw "expected $env:ARCH runner" }
+      - name: Normalize version and assert architecture (Unix)
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
+          test "$(node -p process.arch)" = "$ARCH"
+      - name: Enable pinned package manager
+        run: corepack enable
+      - name: Install and build
+        run: corepack pnpm@10.15.0 install --frozen-lockfile && corepack pnpm@10.15.0 build
+      - name: Prepare self-contained distribution (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: node scripts/prepare-release.mjs --stage "$env:RUNNER_TEMP\deepseek-harness-lite-v$env:VERSION-$env:PLATFORM-$env:ARCH" --version "$env:VERSION"
+      - name: Prepare self-contained distribution (Unix)
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: node scripts/prepare-release.mjs --stage "$RUNNER_TEMP/deepseek-harness-lite-v${VERSION}-${PLATFORM}-${ARCH}" --version "$VERSION"
+      - name: Smoke test installed artifact (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $stage = "$env:RUNNER_TEMP\deepseek-harness-lite-v$env:VERSION-$env:PLATFORM-$env:ARCH"
+          $home = "$env:RUNNER_TEMP\dsh-lite-home"
+          & "$stage\dsh-lite.cmd" init --config "$stage\examples\chat-only\lite.config.json" --home $home
+          if ($LASTEXITCODE -ne 0) { throw "init exited with $LASTEXITCODE" }
+          & "$stage\dsh-lite.cmd" doctor --home $home
+          if ($LASTEXITCODE -ne 0) { throw "doctor exited with $LASTEXITCODE" }
+          & "$stage\dsh-lite.cmd" inspect --home $home
+          if ($LASTEXITCODE -ne 0) { throw "inspect exited with $LASTEXITCODE" }
+      - name: Smoke test installed artifact (Unix)
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          stage="$RUNNER_TEMP/deepseek-harness-lite-v${VERSION}-${PLATFORM}-${ARCH}"
+          home="$RUNNER_TEMP/dsh-lite-home"
+          "$stage/dsh-lite" init --config "$stage/examples/chat-only/lite.config.json" --home "$home"
+          "$stage/dsh-lite" doctor --home "$home"
+          "$stage/dsh-lite" inspect --home "$home"
+      - name: Package Windows ZIP and installer
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $stage = "$env:RUNNER_TEMP\deepseek-harness-lite-v$env:VERSION-$env:PLATFORM-$env:ARCH"
+          $out = "$env:RUNNER_TEMP\artifacts"
+          New-Item -ItemType Directory -Path $out | Out-Null
+          Compress-Archive -LiteralPath $stage -DestinationPath "$out\deepseek-harness-lite-v$env:VERSION-windows-x64.zip" -CompressionLevel Optimal
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc)) { throw 'Inno Setup 6 is unavailable on the Windows runner' }
+          & $iscc "/DSourceDir=$stage" "/DAppVersion=$env:VERSION" "/DOutputDir=$out" packaging\windows-installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC exited with $LASTEXITCODE" }
+      - name: Package Unix archive and macOS DMG
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          stage="$RUNNER_TEMP/deepseek-harness-lite-v${VERSION}-${PLATFORM}-${ARCH}"
+          out="$RUNNER_TEMP/artifacts"
+          mkdir -p "$out"
+          tar -C "$RUNNER_TEMP" -czf "$out/deepseek-harness-lite-v${VERSION}-${PLATFORM}-${ARCH}.tar.gz" "$(basename "$stage")"
+          if [ "$PLATFORM" = macos ]; then
+            hdiutil create -volname "DeepSeek Harness Lite $VERSION" -srcfolder "$stage" -ov -format UDZO "$out/deepseek-harness-lite-v${VERSION}-macos-${ARCH}.dmg"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/artifacts/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: artifacts
+          merge-multiple: true
+      - name: Write checksums
+        working-directory: artifacts
+        run: sha256sum * > SHA256SUMS.txt
+      - name: Create release and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            notes="docs/releases/$GITHUB_REF_NAME.md"
+            if [ -f "$notes" ]; then
+              gh release create "$GITHUB_REF_NAME" --title "DeepSeek Harness Lite $GITHUB_REF_NAME" --notes-file "$notes"
+            else
+              gh release create "$GITHUB_REF_NAME" --title "DeepSeek Harness Lite $GITHUB_REF_NAME" --generate-notes
+            fi
+          fi
+          gh release upload "$GITHUB_REF_NAME" artifacts/* --clobber

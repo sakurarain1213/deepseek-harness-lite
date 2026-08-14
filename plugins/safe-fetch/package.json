@@ -1,5 +1,5 @@
 {
-  "name": "@dsh-lite/plugin-safe-fetch", "version": "0.1.0", "type": "module",
+  "name": "@dsh-lite/plugin-safe-fetch", "version": "0.1.1", "type": "module",
   "exports": { ".": { "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" } },
   "files": ["dist", "README.md"],
   "peerDependencies": { "@deepseek-ai/cordis": "4.0.1", "@deepseek-ai/dsh-tools": "0.1.0-rc.6" },
