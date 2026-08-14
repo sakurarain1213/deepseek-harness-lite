@@ -123,4 +123,4 @@ Lite configuration validation is not a complete sandbox. Operators must review t
 
 ## Windows boundary
 
-Windows participates in data modeling and generated compatibility artifacts today, but it remains planned/experimental until native CI proves the stable path. Promotion requires a successful GitHub-hosted Windows stable job and a reviewed removal of `continue-on-error`. See [windows-roadmap.md](windows-roadmap.md).
+Windows is a supported v0.1.0 platform and participates in the same release-blocking CI matrix as macOS and Linux. On Windows, a candidate is built directly in its final `versions/<uuid>` directory because pnpm package junctions contain absolute targets. On POSIX systems, publication continues to build under `.stage-<uuid>` and rename the complete tree. Both paths validate the candidate before atomically replacing `current.json`, protect active readers with leases, and reclaim old versions through retirement markers. See [windows-roadmap.md](windows-roadmap.md).

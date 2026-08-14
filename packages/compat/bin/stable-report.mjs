@@ -148,7 +148,7 @@ export async function runStableReport({
     ...(!passed ? { diagnostics: [`Release command failed: ${commandResults.at(-1)?.id ?? 'unknown'}`] } : {}),
     limitations: [
       'This release gate records one native platform and architecture; it is not a universal compatibility claim.',
-      'Windows remains planned/experimental until its native CI lane is blocking and passes.',
+      'Windows support is release-gated by the blocking native CI lane; this local report does not replace that CI evidence.',
       'The real API smoke is a separate bounded maintainer check and is not run by public CI without credentials.',
     ],
   }

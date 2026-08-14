@@ -135,7 +135,7 @@ const upstream = loadYaml(await readFile(join(root, '.github/workflows/upstream-
 const ciJob = ci?.jobs?.verify
 const upstreamJob = upstream?.jobs?.observe
 assert(JSON.stringify(ciJob?.strategy?.matrix?.os) === JSON.stringify(['ubuntu-latest', 'macos-latest', 'windows-latest']), 'CI must cover Linux, macOS, and Windows')
-assert(ciJob?.['continue-on-error'] === "${{ matrix.os == 'windows-latest' }}", 'Windows CI must remain planned/non-blocking')
+assert(ciJob?.['continue-on-error'] === undefined, 'every stable CI platform must be release-blocking')
 const ciCommands = (ciJob?.steps ?? []).map((step) => step.run).filter(Boolean).join('\n')
 for (const command of ['install --frozen-lockfile', 'pnpm test', 'pnpm typecheck', 'pnpm build', 'cli.e2e.spec.ts', 'packs.spec.ts', 'packed-production.spec.ts']) {
   assert(ciCommands.includes(command), `CI is missing ${command}`)

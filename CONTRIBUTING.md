@@ -1,6 +1,6 @@
 # Contributing to DeepSeek Harness Lite
 
-Thank you for improving DeepSeek Harness Lite. This is an unofficial community project; contributions must not imply DeepSeek affiliation or endorsement and must not add DeepSeek logos or other brand assets without explicit permission.
+Thank you for improving DeepSeek Harness Lite. This is an unofficial community project; contributions must not imply DeepSeek affiliation or endorsement and must not add official DeepSeek logos or other upstream brand assets without explicit permission.
 
 By participating, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md). For vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
 

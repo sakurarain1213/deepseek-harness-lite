@@ -1,19 +1,45 @@
-# DeepSeek Harness Lite
+<p align="center">
+  <img src="assets/logo.png" alt="DeepSeek Harness Lite" width="720">
+</p>
 
-> **Unofficial community project.** DeepSeek Harness Lite is independently maintained, is not endorsed by DeepSeek, and does not reuse the DeepSeek logo.
+<h1 align="center">DeepSeek Harness Lite</h1>
+
+<p align="center">
+  A lightweight, local-first distribution layer for the official DeepSeek Harness runtime.
+</p>
+
+<p align="center">
+  <a href="https://github.com/sakurarain1213/deepseek-harness-lite/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sakurarain1213/deepseek-harness-lite/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+  <a href="https://github.com/deepseek-ai/deepseek-harness"><img alt="Upstream: DeepSeek Harness 0.1.0-rc.6" src="https://img.shields.io/badge/upstream-0.1.0--rc.6-blue.svg"></a>
+</p>
+
+> **Unofficial community project.** This repository is independently maintained and is not affiliated with, sponsored by, or endorsed by DeepSeek. The project image is a community-provided asset, not an official project endorsement.
 
 [简体中文](README.zh.md) | [Architecture](docs/architecture.md) | [Plugin authoring](docs/plugin-authoring.md) | [Security](SECURITY.md)
 
-DeepSeek Harness Lite is a developer-preview distribution of the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) runtime. It composes the official public packages into a small chat profile, optional capability packs, five example plugins, and reproducible compatibility locks. It is not a source fork and does not replace the upstream agent loop, session model, tool registry, or LLM interfaces.
+DeepSeek Harness Lite keeps the official Harness agent loop, session model, tool registry, and LLM interfaces. It adds a smaller installation profile, removable capability packs, repository-owned plugins, and reproducible compatibility evidence. It is an independent repository, not a GitHub fork and not a replacement runtime.
 
-## Quick start
+## What Lite changes
 
-Prerequisites: Node.js `^22.19.0` or `>=24` and Corepack. The first release runs from a repository checkout and is not published to npm:
+| Area | Lite behavior |
+| --- | --- |
+| Runtime core | Uses official public DeepSeek Harness packages without copying or patching upstream source |
+| Default profile | Installs the text-only `chat-only` closure |
+| Optional capability | Adds exact dependency and Cordis rows through removable packs |
+| Plugins | Activates only explicitly selected or pack-contributed Lite plugins |
+| Compatibility | Pins one verified upstream package set and keeps latest-upstream observation separate |
+| Publication | Builds immutable profiles and switches `current.json` only after validation |
 
-```sh
+## Install
+
+Requirements: Git, Node.js `^22.19.0` or `>=24`, and Corepack. PowerShell 7 (`pwsh`) is required only when the `shell` pack is enabled on Windows. v0.1.0 runs from a repository checkout and is not published to npm.
+
+### Windows PowerShell
+
+```powershell
 git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
-cd deepseek-harness-lite
-corepack enable
+Set-Location deepseek-harness-lite
 corepack pnpm@10.15.0 install --frozen-lockfile
 corepack pnpm@10.15.0 build
 node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
@@ -21,89 +47,154 @@ node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
 node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
 ```
 
-`doctor` and `inspect` do not require a model credential. To run one model turn, provide credentials only in the process environment:
+### macOS
 
 ```sh
-DEEPSEEK_BASE_URL='https://api.deepseek.com' \
+git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
+cd deepseek-harness-lite
+corepack pnpm@10.15.0 install --frozen-lockfile
+corepack pnpm@10.15.0 build
+node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
+node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
+```
+
+### Linux
+
+```sh
+git clone https://github.com/sakurarain1213/deepseek-harness-lite.git
+cd deepseek-harness-lite
+corepack pnpm@10.15.0 install --frozen-lockfile
+corepack pnpm@10.15.0 build
+node apps/cli/dist/src/bin.js init --config examples/chat-only/lite.config.json --home .dsh-lite-home
+node apps/cli/dist/src/bin.js doctor --home .dsh-lite-home
+node apps/cli/dist/src/bin.js inspect --home .dsh-lite-home
+```
+
+`doctor` and `inspect` are keyless. For a real model turn, pass credentials through the current process environment only.
+
+Windows PowerShell:
+
+```powershell
+$env:DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
+$env:DEEPSEEK_API_KEY = "<your-key>"
+$env:DEEPSEEK_MODEL = "deepseek-v4-flash"
+node apps/cli/dist/src/bin.js run "Reply with: ready" --home .dsh-lite-home
+```
+
+macOS/Linux:
+
+```sh
+DEEPSEEK_BASE_URL='https://api.deepseek.com/v1' \
 DEEPSEEK_API_KEY='<your-key>' \
 DEEPSEEK_MODEL='deepseek-v4-flash' \
 node apps/cli/dist/src/bin.js run 'Reply with: ready' --home .dsh-lite-home
 ```
 
-Do not put credentials in `lite.config.json`, generated profiles, fixtures, or commits. `DEEPSEEK_MODEL` defaults to `deepseek-v4-flash`; the base URL and API key have no defaults.
+Never put credentials in `lite.config.json`, generated profiles, fixtures, logs, or commits. `DEEPSEEK_MODEL` defaults to `deepseek-v4-flash`; the base URL and API key have no defaults.
 
-## Profiles and packs
+## Profiles and capability packs
 
-The `chat-only` profile is the minimal text runtime. The `developer` preset enables `workspace`. Packs are declarative and removable: changing the selected packs regenerates an exact dependency closure and Cordis configuration rather than leaving disabled packages installed.
-
-| Pack | Adds | Default | Platforms modeled |
-| --- | --- | --- | --- |
-| `workspace` | Workspace-bounded durable notes and session export | Enabled by `developer` | macOS, Linux, Windows |
-| `shell` | Local subprocess plus Bash on macOS/Linux or PowerShell on Windows, with sandbox policy | Off | macOS, Linux, Windows |
-| `research` | Bounded public HTTP(S) fetch | Off | macOS, Linux, Windows |
-
-Pack metadata includes exact dependencies, Cordis rows, platform declarations, conflicts, and probes. Platform metadata is not a support claim; see [Windows status](#windows-status).
-
-For v0.1.0, `workspace` intentionally does not load the upstream generic filesystem or search tools, and `research` does not load the upstream generic `web_fetch` tool. Those broader tools remain disabled until their workspace-containment and SSRF boundaries can be demonstrated under Lite's release gate. This is a deliberate authority reduction, not a compatibility accident.
-
-## Repository plugins
-
-The repository's five plugins demonstrate separate extension and security boundaries.
-
-| Plugin | Contribution | Security boundary |
+| Selection | Contents | Typical use |
 | --- | --- | --- |
-| `@dsh-lite/plugin-health` | `lite_health` diagnostic tool | Returns sanitized runtime metadata and never traverses environment values |
-| `@dsh-lite/plugin-safe-fetch` | Bounded HTTP(S) fetch | Revalidates redirects and rejects private, loopback, link-local, multicast, and metadata-service destinations |
-| `@dsh-lite/plugin-workspace-notes` | Bounded workspace note read/write tool and note-section formatter | Fixes data to `.dsh-lite/notes.md` and performs canonical-path and symlink checks; see the documented concurrent parent-replacement residual in [Security](SECURITY.md) |
-| `@dsh-lite/plugin-command-allowlist` | Shell execution policy | Accepts only simple tokens, denies shell syntax, and gives the shell pack a narrow read-only `pwd`/`git status`/`git diff`/`git log` policy |
-| `@dsh-lite/plugin-session-export` | Markdown or JSON session projection | Exports an explicit allowlist of event fields |
+| `chat-only` | Official text runtime; no optional pack or plugin | Minimal chat and API validation |
+| `developer` | `workspace` pack by default | Local work with bounded notes and session export |
+| `workspace` | `lite_notes` and sanitized session export | Durable project context without generic filesystem/search tools |
+| `shell` | Local subprocess, sandbox policy, command allowlist, Bash or PowerShell rows | Explicit local command execution |
+| `research` | `lite_safe_fetch` | Bounded public HTTP(S) retrieval without upstream generic `web_fetch` |
 
-All five repository-owned packages are `bundled`: install, build, and activation evidence is pinned to source commit `2c8346eee9b0e3baf7b57cbb6f59fe12696d7c2a`. External catalog entries use separate `verified`, `listed`, or `blocked` states. See [plugin authoring and catalog submission](docs/plugin-authoring.md).
+Packs are declarative and removable. Changing the selection regenerates the exact dependency closure, lock, and Cordis rows. Disabled capability packages are physically absent from the generated profile.
 
-The source checkout installs these small repository plugin packages together so the Runtime can use static, reviewable imports. Installation does not imply activation: a resolved profile mounts only the plugins selected directly or contributed by its selected packs. Official Harness dependencies for heavier capabilities are physically absent from a generated profile when their pack is not selected.
+The v0.1.0 `workspace` pack intentionally excludes upstream generic filesystem and search tools. The `research` pack intentionally excludes upstream generic `web_fetch`. Those broader surfaces remain off until their containment and SSRF boundaries pass the release gate.
 
-## Compatibility evidence
+## Bundled plugins
 
-The `stable` channel is bound to one coherent, exact upstream package set in [`compat/upstream-lock.json`](compat/upstream-lock.json). Committed closure metadata and per-platform lock templates under [`packages/core/compat/`](packages/core/compat/) cover every pack combination. The CLI validates their integrity before installing a generated profile.
+| Package | Contribution | Security boundary |
+| --- | --- | --- |
+| `@dsh-lite/plugin-health` | Sanitized `lite_health` diagnostics | Does not enumerate environment values |
+| `@dsh-lite/plugin-safe-fetch` | Bounded public HTTP(S) fetch | Revalidates redirects; blocks private and special-use destinations; limits bytes and time |
+| `@dsh-lite/plugin-workspace-notes` | Fixed-path durable notes | Restricts data to `.dsh-lite/notes.md`; checks canonical paths and links; bounds UTF-8 bytes |
+| `@dsh-lite/plugin-command-allowlist` | Deny-by-default shell policy | Parses tokens structurally and rejects shell syntax; default rules are read-only |
+| `@dsh-lite/plugin-session-export` | Markdown or JSON session projection | Exports an explicit event and field allowlist |
 
-This is **best-effort verified compatibility**, not a guarantee that every future DeepSeek Harness release will work. Stable evidence gates releases. The latest-upstream lane detects changes separately and must never rewrite or weaken the stable lane. See [upstream maintenance](docs/upstream-maintenance.md).
+Repository plugins install with the source checkout for static, reviewable imports. Installation does not activate them. A resolved profile mounts only direct selections and contributions from selected packs.
 
-## Install-size measurement
+## Plugin catalog
 
-Run `pnpm measure:install`. The measurement creates a clean installation of the actual 14-workspace repository checkout, the generated chat-only official-package closure, and the official aggregate CLI under the same platform, Node.js version, package-manager invocation, registry, store, and cache conditions. It records `node_modules` bytes and files, direct dependency counts, unique installed package counts, workspace counts where applicable, and environment metadata in `compat/reports/install-size.json`.
+Catalog status is derived from evidence, not from repository topics, popularity, or metadata alone.
 
-The committed 2026-08-14 macOS arm64 measurement with Node.js `22.22.3`, pnpm `10.15.0`, and one isolated shared store/cache recorded:
+| Status | Meaning |
+| --- | --- |
+| `bundled` | Maintained in this repository and covered by release gates |
+| `verified` | An external pinned commit passed the published install, build, activation, license, and risk checks |
+| `listed` | Metadata is reviewable, but executable verification is incomplete |
+| `blocked` | License, secret, install, build, activation, or safety evidence prevents recommendation |
 
-| Installation | Installed bytes | Files | Unique installed packages | Direct dependencies | Workspaces |
+External submissions must pin a full source commit, declare an SPDX license and Harness compatibility, include install/build/activation evidence, and disclose risk flags. See [Plugin authoring](docs/plugin-authoring.md) and the generated [catalog](catalog/generated/README.md).
+
+## Architecture
+
+```text
+lite.config.json
+       |
+       v
+CLI -> resolver -> exact closure + Cordis rows -> immutable profile publication
+                    ^                         |
+                    |                         v
+             capability packs       official Harness runtime
+                                              |
+                                              v
+                                  official tool registry + Lite plugins
+```
+
+Lite owns configuration, closure generation, publication, plugins, and evidence. Official packages own the agent loop, sessions, model integration, and tool registry. Read [Architecture](docs/architecture.md) for trust boundaries and the publication protocol.
+
+## Upstream compatibility
+
+The stable channel pins the complete upstream `0.1.0-rc.6` package inventory in [`compat/upstream-lock.json`](compat/upstream-lock.json). Generated closures and locks cover every pack combination on Windows, macOS, and Linux.
+
+Compatibility is **best-effort and release-gated**, not permanent:
+
+- stable uses the exact upstream release that passed the recorded gates;
+- the latest-upstream workflow only detects new registry metadata;
+- an upstream update requires regenerated closures and locks plus the complete release gates;
+- Lite config and pack schemas remain stable where practical;
+- incompatible upstream changes are handled through migration notes and versioned releases.
+
+See [Upstream maintenance](docs/upstream-maintenance.md).
+
+## Windows support
+
+Windows is a supported v0.1.0 platform. The native path uses PowerShell rows, Windows package closures, PATHEXT-aware probes, and final-path profile construction so pnpm absolute junctions remain valid. `current.json` changes only after the candidate passes validation.
+
+The release gate includes a native regression named `keeps a native Windows absolute junction valid after publication`. Windows is part of the same release-blocking CI matrix as Ubuntu and macOS; it is not configured with `continue-on-error`. Local validation also covers `init`, `doctor`, `inspect`, a real OpenAI-compatible API turn, profile cleanup, secret scanning, and all five plugins.
+
+See [Windows support](docs/windows-roadmap.md) for the exact gates and platform requirements.
+
+## Install-size evidence
+
+The committed clean measurement was recorded on macOS arm64 with Node.js `22.22.3` and pnpm `10.15.0`. It is one-platform evidence, not a universal size promise.
+
+| Installation | Bytes | Files | Installed packages | Direct dependencies | Workspaces |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Lite repository checkout, including build/test dependencies | 139,890,898 | 4,107 | 121 | 64 | 14 |
-| Generated core `darwin-chat-only` closure | 2,345,263 | 335 | 20 | 18 | N/A |
-| Official `@deepseek-ai/dsh@0.1.0-rc.6` aggregate install | 253,526,108 | 32,237 | 524 | 1 | N/A |
+| Lite checkout with build/test dependencies | 139,890,898 | 4,107 | 121 | 64 | 14 |
+| Generated `darwin-chat-only` closure | 2,345,263 | 335 | 20 | 18 | N/A |
+| Official `@deepseek-ai/dsh@0.1.0-rc.6` aggregate | 253,526,108 | 32,237 | 524 | 1 | N/A |
 
-The checkout row matches this release's install-from-source quick start and therefore includes development/build tooling; the core row measures only the generated minimal runtime closure. These are one-platform measurements, not universal promises. [`compat/reports/install-size.json`](compat/reports/install-size.json) is the source of truth; rerun and update the evidence whenever the dependency graph or method changes.
+[`compat/reports/install-size.json`](compat/reports/install-size.json) is the source of truth. Run `corepack pnpm@10.15.0 measure:install` again whenever the dependency graph or measurement method changes.
 
-## Security model
+## Security and maintenance
 
-- Configuration and generated profiles reject credential-shaped fields.
-- API credentials stay in the process environment and diagnostics redact secret-like keys.
-- Generated profiles use exact dependencies and committed lock integrity hashes.
-- Capability packs are explicit; optional functionality does not silently activate.
-- Plugin catalog status is evidence-based. Discovery or metadata review alone does not make a plugin recommended.
-- Network, filesystem, process, and session-export plugins enforce their own narrow boundaries.
-- A valid configuration is not a sandbox. Review enabled packs and plugins before using Lite on untrusted tasks or repositories.
+- Credentials stay in process environment variables; diagnostics redact secret-like fields.
+- Generated profiles use exact dependencies, committed lock hashes, and profile-local resolution checks.
+- Optional packs expand authority and must be selected explicitly.
+- Network, filesystem, process, and session plugins enforce separate narrow boundaries.
+- A valid Lite configuration is not a sandbox. Review enabled packs and plugins before running untrusted tasks.
 
-Read [SECURITY.md](SECURITY.md) for supported versions and private reporting, and [architecture.md](docs/architecture.md) for trust boundaries.
+Report vulnerabilities through GitHub private vulnerability reporting as described in [SECURITY.md](SECURITY.md). Do not include real keys or private logs.
 
-## Windows status
+## Contributing and license
 
-Windows is modeled from day one in paths, platform-dependent package closures, PowerShell rows, executable probes, and lock templates. Native Windows support remains **planned/experimental**. It advances to supported only after the stable matrix succeeds on a GitHub-hosted Windows runner and maintainers remove `continue-on-error` in a reviewed change. Cross-platform unit tests or generated Windows locks alone are not promotion evidence. See the [Windows roadmap](docs/windows-roadmap.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for code, pack, documentation, and catalog changes. Original Lite code is available under the [MIT License](LICENSE). Upstream and third-party packages retain their own copyrights and licenses; see [NOTICE.md](NOTICE.md).
 
-## Contributing
-
-Use [CONTRIBUTING.md](CONTRIBUTING.md) for code, documentation, pack, and catalog changes. Catalog submissions must pin a source commit, declare an SPDX license and compatibility range, disclose risk flags, and produce install/build/activation evidence before they can be classified as verified.
-
-## License and attribution
-
-Original DeepSeek Harness Lite code is available under the [MIT License](LICENSE). DeepSeek Harness remains an upstream project with its own copyright and MIT license. Dependencies retain their respective licenses. See [NOTICE.md](NOTICE.md) for attribution.
-
-“DeepSeek” and “DeepSeek Harness” identify the upstream project. Their use here does not imply affiliation, sponsorship, or endorsement.
+"DeepSeek" and "DeepSeek Harness" identify the upstream project. Their use here does not imply affiliation, sponsorship, or endorsement.

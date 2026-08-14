@@ -1,69 +1,53 @@
-# Windows Roadmap
+# Windows Support
 
-Windows is a first-day architecture target and a current **planned/experimental** platform. DeepSeek Harness Lite does not claim native Windows support until its stable workflow passes on a GitHub-hosted Windows runner and maintainers deliberately remove `continue-on-error` in a reviewed change.
+Windows is a supported DeepSeek Harness Lite v0.1.0 platform. Its `windows-latest` job is part of the same release-blocking CI matrix as Ubuntu and macOS. The repository does not use `continue-on-error` for Windows.
 
-Generated Windows locks, platform-injected unit tests, or a successful Windows run on one developer machine are useful evidence, but none is sufficient for promotion.
+Support applies to the stable upstream lock recorded in `compat/upstream-lock.json`, the Node.js engines declared in `package.json`, and the commands and capability packs covered by the release gate. It is not a claim that untested future Harness versions will work.
 
-The resulting native Windows stable job must be release-blocking. A passing job that still uses `continue-on-error` leaves Windows planned/experimental.
+## Requirements
 
-## Already modeled
+- Git for Windows.
+- Node.js `^22.19.0` or `>=24` with Corepack.
+- PowerShell 7 (`pwsh`) when the `shell` pack is selected.
+- A filesystem that supports ordinary pnpm directory junctions.
 
-- `win32` is part of the public platform type and pack manifest schema.
-- CLI paths resolve through Windows path semantics when the injected platform is `win32`.
-- Profile publication and recovery account for Windows directory replacement and cleanup behavior.
-- Every pack declares Windows in its platform metadata.
-- The workspace and research packs use the same bounded repository-plugin surfaces as other platforms; v0.1.0 does not enable upstream generic filesystem/search or `web_fetch` tools on Windows.
-- The shell pack selects `pwsh`, `@deepseek-ai/dsh-pwsh-local`, `@deepseek-ai/dsh-pwsh-sandbox`, and `@deepseek-ai/dsh-tool-pwsh` on Windows.
-- Executable probes use `PATH` and `PATHEXT` semantics for Windows.
-- Committed compatibility metadata includes `win32` closure and lock templates for every pack combination.
+The `chat-only`, `workspace`, and `research` selections do not require `pwsh`. Windows shell behavior uses the official PowerShell package rows and does not emulate Bash.
 
-These decisions prevent a later Windows port from requiring a new configuration format or pack model.
+## Native publication design
 
-## Current limitations
+pnpm creates package junctions with absolute targets on Windows. Moving a completed installation from `.stage-<uuid>` to `versions/<uuid>` invalidates those targets even when the move itself succeeds.
 
-- Windows evidence must come from a native Windows runner; cross-platform generation does not prove install, process, filesystem, PowerShell, or cleanup behavior.
-- Native package availability and install-script policy may differ from macOS and Linux.
-- Filesystem locking, symlink/junction behavior, executable suffixes, quoting, signal handling, and atomic directory operations need runner-backed coverage.
-- Shell behavior differs by design: Windows uses PowerShell rows, not emulated Bash rows.
-- Until the stable native job passes and is made blocking, README and compatibility reports must say planned/experimental rather than supported.
+Windows publication therefore constructs the candidate directly in its final immutable `versions/<uuid>` directory. A strict publisher lease protects that directory while it is being built. The publisher validates the full profile and runtime before atomically replacing `current.json`. A failed build is removed without changing the visible profile.
 
-## Promotion gates
+POSIX publication retains the stage-and-rename path. Both implementations use the same reader leases, previous pointer, retirement markers, path-containment checks, and conservative cleanup rules. A publisher only prunes version directories that existed when that publication began, so concurrent publishers cannot delete each other's newly created versions.
 
-Windows becomes a supported release platform only when all of the following pass on `windows-latest` using the stable upstream lock:
+## Release gates
 
-1. Frozen root installation under the repository-pinned pnpm and a supported Node.js version.
-2. Unit tests, typecheck, and build.
-3. Built `dsh-lite init`, `doctor`, `inspect`, and keyless error-path process tests.
-4. Profile materialization and installed-profile validation for chat-only and every pack combination.
-5. PowerShell executable probing and shell-pack activation.
-6. Transactional publication, recovery, cleanup, path containment, and link/junction safety tests.
-7. Five bundled plugin unit, security, activation, and assembled-runtime tests.
-8. Stable compatibility, secret scan, license audit, repository verification, and clean-install measurement.
-9. A reviewed compatibility report with no Windows-specific known failure hidden by retries or skipped assertions.
-10. Removal of `continue-on-error` from the Windows stable CI job in a reviewed commit.
+Every supported Windows release must pass all of the following on a native runner:
 
-The last step is mandatory. A green non-blocking job does not silently change project policy.
+1. Frozen root installation with pnpm `10.15.0` and a supported Node.js version.
+2. Unit tests, integration tests, plugin tests, typecheck, and build.
+3. Built CLI `init`, `doctor`, `inspect`, and keyless failure-path checks.
+4. Profile materialization and installed-profile validation for chat-only and every capability-pack combination.
+5. PowerShell probing and shell-pack activation.
+6. Transaction publication, concurrency, recovery, cleanup, path containment, and link/junction safety tests.
+7. A native PASS for `keeps a native Windows absolute junction valid after publication`; a skipped result is not accepted.
+8. Repository verification, secret scanning, license auditing, compatibility checks, and packed-production checks.
+9. A reviewed stable report tied to one real Lite source commit and the exact stable upstream package inventory.
+10. A release-blocking `windows-latest` job with no hidden Windows-specific failure or permissive `continue-on-error` setting.
 
-## CI progression
+The real API smoke is a separate maintainer check because public CI has no model credential. Its result must be stated separately from public CI evidence.
 
-### Stage 1: Planned/experimental
+## Current boundaries
 
-Windows runs the same stable matrix where practical but may be configured with `continue-on-error`. Failures are retained as evidence and do not weaken macOS/Linux stable status. Documentation makes no support claim.
+- `workspace` uses the bounded notes and session-export plugins; it does not expose upstream generic filesystem or search tools.
+- `research` uses the bounded Lite fetch plugin; it does not expose upstream generic `web_fetch`.
+- `shell` requires `pwsh` and uses the deny-by-default command allowlist.
+- Antivirus scanners and external file locks may delay cleanup; retry behavior is bounded and publication keeps the previous valid profile visible on failure.
+- Generated locks cover `win32`, but each upstream update still requires a fresh native blocking run.
 
-### Stage 2: Promotion review
+## Ongoing support
 
-After a complete native pass, maintainers inspect logs and reports for skipped work, conditional exclusions, native dependency substitutions, and cleanup flakiness. They rerun the workflow and review any Windows-only exceptions.
+Every stable lock update must keep the Windows job green. A Windows regression blocks release and must be documented immediately. Restoring `continue-on-error`, skipping native junction coverage, replacing PowerShell behavior with Bash emulation, or silently dropping security probes requires an explicit support-policy change and is not a routine workaround.
 
-### Stage 3: Supported
-
-Maintainers remove `continue-on-error`, update the public compatibility report and README in the same reviewed release change, and make Windows failure release-blocking. The Lite schema and pack ids remain unchanged.
-
-### Stage 4: Ongoing support
-
-Every stable lock update must keep the Windows lane green. A later regression changes the compatibility report immediately and blocks releases; it must not be hidden by restoring `continue-on-error` without an explicit support-status review.
-
-## Contribution priorities
-
-Useful Windows contributions include native failure reproductions, PowerShell activation tests, junction and symlink containment cases, antivirus/file-lock cleanup behavior, long-path handling, and deterministic install reports. Include the Windows edition, architecture, Node.js version, pnpm version, selected profile/packs, and exact Lite and upstream commits.
-
-Do not solve Windows issues by adding a separate configuration schema, silently dropping security probes, falling back to mixed upstream package versions, or changing Windows to Bash semantics.
+Useful Windows contributions include native file-lock reproductions, long-path cases, PowerShell activation coverage, junction containment tests, antivirus interaction reports, and deterministic install measurements. Include the Windows edition, architecture, Node.js version, pnpm version, selected packs, and exact Lite/upstream commits.

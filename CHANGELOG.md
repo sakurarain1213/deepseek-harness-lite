@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Declarative `workspace`, `shell`, and `research` capability packs. The v0.1.0 workspace and research packs intentionally omit upstream generic filesystem/search and `web_fetch` tools until their containment and SSRF boundaries can be proven.
 - Five release-gated bundled plugins covering health diagnostics, safe fetch, workspace notes, command allowlisting, and session export.
 - Exact upstream stable lock and deterministic per-platform compatibility closures for every pack combination.
-- Bilingual repository documentation, security and contribution policies, upstream attribution, and Windows promotion criteria.
+- Bilingual repository documentation, a community-provided project image, security and contribution policies, and upstream attribution.
 
 ### Compatibility
 
@@ -26,4 +26,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Native shell installation and runtime checks execute only on their matching runner platform; foreign-platform coverage remains deterministic compatibility metadata.
 - Resource-intensive profile, Corepack, and transactional-filesystem integration files run in a narrow serialized phase, while unrelated test files retain parallel execution.
 - Public CI retains source history so bundled-plugin provenance remains independently verifiable.
-- Windows remains planned/experimental until native stable CI passes and `continue-on-error` is removed.
+- Windows profile publication constructs pnpm junctions at their final immutable path, and native Windows is release-blocking in the three-platform CI matrix.

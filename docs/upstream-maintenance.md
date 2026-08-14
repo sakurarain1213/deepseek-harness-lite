@@ -64,7 +64,7 @@ Examples of acceptable claims:
 
 - “Stable `0.1.0-rc.6` package set passed the recorded macOS job.”
 - “Latest failed during plugin activation; stable remains unchanged.”
-- “Windows is planned/experimental; generated locks exist but native stable CI has not been promoted.”
+- “Windows passed the recorded blocking native CI job for this Lite commit and stable upstream lock.”
 
 Do not claim universal, future, or permanent compatibility.
 
