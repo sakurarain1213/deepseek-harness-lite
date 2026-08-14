@@ -11,10 +11,10 @@ const nativePlatform = process.platform as CliIo['platform']
 const io = (): CliIo & { stdout: string[]; stderr: string[] } => {
   const stdout: string[] = []
   const stderr: string[] = []
-  return { cwd: process.cwd(), platform: 'linux', stdout, stderr, out: (line) => stdout.push(line), err: (line) => stderr.push(line) }
+  return { cwd: process.cwd(), platform: nativePlatform, stdout, stderr, out: (line) => stdout.push(line), err: (line) => stderr.push(line) }
 }
 
-describe('diagnostic CLI', () => {
+describe('diagnostic CLI', { timeout: process.platform === 'win32' ? 30_000 : 5_000 }, () => {
   it('enforces the repository Node engine boundaries', () => {
     expect(isSupportedNodeVersion('22.18.9')).toBe(false)
     expect(isSupportedNodeVersion('22.19.0')).toBe(true)
@@ -61,7 +61,7 @@ describe('diagnostic CLI', () => {
         node: { status: 'pass', version: process.versions.node, engine: '^22.19.0 || >=24', satisfies: true },
         home: { status: 'pass', writable: true },
         current: { status: 'pass', validated: true },
-        profile: { status: 'pass', validated: true, closureId: 'linux-chat-only' },
+        profile: { status: 'pass', validated: true, closureId: `${nativePlatform}-chat-only` },
         runtime: { status: 'pass', activated: true },
         secretHygiene: { status: 'pass', plaintextCredentials: false },
       },
@@ -70,10 +70,10 @@ describe('diagnostic CLI', () => {
       schemaVersion: 1,
       identity: {
         profile: 'chat-only',
-        closureId: 'linux-chat-only',
+        closureId: `${nativePlatform}-chat-only`,
         upstream: { channel: 'stable', version: '0.1.0-rc.6' },
       },
-      platform: 'linux',
+      platform: nativePlatform,
       arch: process.arch,
       packageNames: Object.keys(packageJson.dependencies).sort(),
       packageVersions: packageJson.dependencies,
@@ -107,9 +107,9 @@ describe('diagnostic CLI', () => {
       state: 'ready',
       frozenInstall: true,
       activated: true,
-      platform: 'linux',
+      platform: nativePlatform,
       arch: process.arch,
-      closureId: 'linux-workspace',
+      closureId: `${nativePlatform}-workspace`,
     })
     await expect(access(join(profile, 'pnpm-lock.yaml'))).resolves.toBeUndefined()
     await expect(access(join(profile, 'node_modules', '@deepseek-ai', 'dsh-tool-fs'))).rejects.toThrow()
@@ -214,7 +214,7 @@ describe('diagnostic CLI', () => {
     expect(await main(['init', '--config', config, '--home', home], io())).toBe(0)
     const beforeTree = await resolveCurrentTree(home)
 
-    await expect(initialize(config, home, 'linux', async () => { throw new Error('activation failed') }))
+    await expect(initialize(config, home, nativePlatform, async () => { throw new Error('activation failed') }))
       .rejects.toThrow('activation failed')
     expect(await resolveCurrentTree(home)).toBe(beforeTree)
   })

@@ -19,7 +19,7 @@
     "smoke:api": "node scripts/real-api-smoke.mjs",
     "test:plugins": "vitest run --config plugins/vitest.config.ts",
     "typecheck": "tsc -b --pretty false",
-    "test": "tsc -b && pnpm compat:check && vitest run && pnpm test:plugins",
+    "test": "tsc -b && pnpm compat:check && vitest run --exclude apps/cli/tests/cli.e2e.spec.ts && vitest run apps/cli/tests/cli.e2e.spec.ts && pnpm test:plugins",
     "verify:repo": "node scripts/verify-repo.mjs",
     "verify:release": "node scripts/verify-repo.mjs --release"
   },
