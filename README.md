@@ -5,7 +5,7 @@
 <h1 align="center">DeepSeek Harness Lite</h1>
 
 <p align="center">
-  A lightweight, local-first distribution layer for the official DeepSeek Harness runtime.
+  <strong>Keep the official Harness core. Make installation, capability trimming, customization, and plugin extension lighter.</strong>
 </p>
 
 <p align="center">
@@ -18,7 +18,9 @@
 
 [简体中文](README.zh.md) | [Architecture](docs/architecture.md) | [Plugin authoring](docs/plugin-authoring.md) | [Security](SECURITY.md)
 
-DeepSeek Harness Lite keeps the official Harness agent loop, session model, tool registry, and LLM interfaces. It adds a smaller installation profile, removable capability packs, repository-owned plugins, and reproducible compatibility evidence. It is an independent repository, not a GitHub fork and not a replacement runtime.
+**Positioning:** DeepSeek Harness Lite is an unofficial lightweight distribution and extension layer built on the official Harness runtime, not a reimplementation. It preserves the official agent loop, session model, tool registry, and LLM interfaces while using smaller verified profiles, removable capability packs, and a focused plugin path to make installation, capability trimming, downstream customization, and plugin integration easier.
+
+Plugin compatibility is best-effort and release-gated. Plugins built on public Harness/Cordis interfaces can be integrated when they fit Lite's supported host-service and security boundaries, but compatibility with every official or third-party plugin is not promised.
 
 ## What you are running
 

@@ -5,7 +5,7 @@
 <h1 align="center">DeepSeek Harness Lite</h1>
 
 <p align="center">
-  面向官方 DeepSeek Harness 运行时的轻量、本地优先发行层。
+  <strong>保留官方 Harness 内核，让安装、裁剪、改造与插件扩展更轻。</strong>
 </p>
 
 <p align="center">
@@ -18,7 +18,9 @@
 
 [English](README.md) | [架构](docs/architecture.md) | [插件开发](docs/plugin-authoring.md) | [安全策略](SECURITY.md)
 
-DeepSeek Harness Lite 保留官方 Harness 的 agent loop、session 模型、工具注册表和 LLM 接口，在此基础上提供更小的安装配置、可移除能力包、仓库自有插件和可复现兼容证据。它是独立仓库，不是 GitHub fork，也不是替代运行时。
+**仓库定位：** DeepSeek Harness Lite 不是对官方运行时的重写，而是基于官方 Harness 内核的非官方轻量发行与扩展层。它保留官方 agent loop、session 模型、工具注册表和 LLM 接口，通过更小的已验证配置、可移除能力包和聚焦的插件接入路径，降低下载安装、能力裁剪、二次改造和插件扩展成本。
+
+插件兼容采用尽力而为、版本门禁策略：使用公开 Harness/Cordis 接口，并符合 Lite 宿主服务与安全边界的插件可以接入；但不承诺所有官方或第三方插件无需适配即可运行。
 
 ## 你实际运行的是什么
 
