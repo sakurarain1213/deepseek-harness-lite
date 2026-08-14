@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Compatibility seeds, generated closures, and the generated plugin catalog stay LF-normalized so strict integrity hashes and catalog checks survive Windows checkouts.
 - Linux shell profiles authorize only the audited `node-pty` build and require a real native module before publication.
 - Windows child processes execute Corepack through its JavaScript entry without shell command interpolation, preserving paths and arguments containing spaces or metacharacters.
+- Windows profile containment normalizes namespaced junction targets before comparison while continuing to reject paths outside the installed profile.
 - Native shell installation and runtime checks execute only on their matching runner platform; foreign-platform coverage remains deterministic compatibility metadata.
 - Resource-intensive profile, Corepack, and transactional-filesystem integration files run in a narrow serialized phase, while unrelated test files retain parallel execution.
 - Public CI retains source history so bundled-plugin provenance remains independently verifiable.

@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { dirname, isAbsolute, join, relative, resolve, win32 } from 'node:path'
+import { dirname, join, resolve, win32 } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { fileURLToPath } from 'node:url'
 import { load, dump } from 'js-yaml'
@@ -13,6 +13,7 @@ import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include, { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
 import { resolveCorepackCommand } from './corepack.js'
+import { isPathInside } from './path-containment.js'
 import type { Platform } from './packs.js'
 import { publishTree } from './transaction.js'
 
@@ -142,8 +143,7 @@ export async function loadPackPackage(packageJsonPath: string): Promise<PackMani
   const expectedId = result.data.name.slice('@dsh-lite/pack-'.length)
   const packageRoot = await realpath(dirname(packageJsonPath))
   const manifestPath = await realpath(resolve(packageRoot, result.data.dshLite))
-  const manifestRelative = relative(packageRoot, manifestPath)
-  if (manifestRelative.startsWith('..') || isAbsolute(manifestRelative)) throw new Error('pack manifest is not contained in package')
+  if (!isPathInside(packageRoot, manifestPath)) throw new Error('pack manifest is not contained in package')
   const manifest = await loadPackManifest(manifestPath)
   if (manifest.id !== expectedId) throw new Error('pack manifest id does not match package metadata')
   return manifest
@@ -278,8 +278,7 @@ async function activateCordis(path: string, rows: CordisRow[], resolvedPackages:
 async function resolveProfilePackage(profileDir: string, name: string): Promise<{ entry: string; packageRoot: string; version: string }> {
   const nodeModules = await realpath(join(profileDir, 'node_modules'))
   const entry = await realpath(createRequire(join(profileDir, 'package.json')).resolve(name))
-  const entryRelative = relative(nodeModules, entry)
-  if (entryRelative.startsWith('..') || isAbsolute(entryRelative)) throw new Error(`dependency "${name}" did not resolve profile-local`)
+  if (!isPathInside(nodeModules, entry)) throw new Error(`dependency "${name}" did not resolve profile-local`)
   let directory = dirname(entry)
   while (true) {
     const manifestPath = join(directory, 'package.json')
@@ -287,8 +286,7 @@ async function resolveProfilePackage(profileDir: string, name: string): Promise<
       const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as { name?: unknown; version?: unknown }
       if (manifest.name === name && typeof manifest.version === 'string') {
         const packageRoot = await realpath(directory)
-        const rootRelative = relative(nodeModules, packageRoot)
-        if (rootRelative.startsWith('..') || isAbsolute(rootRelative)) throw new Error(`dependency "${name}" did not resolve profile-local`)
+        if (!isPathInside(nodeModules, packageRoot)) throw new Error(`dependency "${name}" did not resolve profile-local`)
         return { entry, packageRoot, version: manifest.version }
       }
     } catch (error) {
@@ -314,8 +312,7 @@ async function repairSpawnHelpers(profileDir: string): Promise<void> {
     }
     packageRoot = dirname(packageRoot)
   }
-  const packageRelative = relative(nodeModules, packageRoot)
-  if (packageRoot === nodeModules || packageRelative.startsWith('..') || isAbsolute(packageRelative)) {
+  if (packageRoot === nodeModules || !isPathInside(nodeModules, packageRoot)) {
     throw new Error('node-pty did not resolve profile-local')
   }
   const prebuilds = join(packageRoot, 'prebuilds')
@@ -335,8 +332,7 @@ async function resolveTransitivePackage(profileDir: string, parentName: string, 
   const nodeModules = await realpath(join(profileDir, 'node_modules'))
   const parentEntry = (await resolveProfilePackage(profileDir, parentName)).entry
   const entry = await realpath(options.resolveTransitivePackage?.(profileDir, parentName, childName) ?? createRequire(parentEntry).resolve(childName))
-  const entryRelative = relative(nodeModules, entry)
-  if (entryRelative.startsWith('..') || isAbsolute(entryRelative)) throw new Error(`transitive dependency "${childName}" did not resolve profile-local`)
+  if (!isPathInside(nodeModules, entry)) throw new Error(`transitive dependency "${childName}" did not resolve profile-local`)
   let packageRoot = dirname(entry)
   while (true) {
     try {
@@ -349,8 +345,7 @@ async function resolveTransitivePackage(profileDir: string, parentName: string, 
     if (parent === packageRoot) throw new Error(`unable to inspect installed transitive dependency "${childName}"`)
     packageRoot = parent
   }
-  const rootRelative = relative(nodeModules, await realpath(packageRoot))
-  if (rootRelative.startsWith('..') || isAbsolute(rootRelative)) throw new Error(`transitive dependency "${childName}" did not resolve profile-local`)
+  if (!isPathInside(nodeModules, await realpath(packageRoot))) throw new Error(`transitive dependency "${childName}" did not resolve profile-local`)
   return { entry, packageRoot }
 }
 
