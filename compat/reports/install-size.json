@@ -2,35 +2,35 @@
   "schemaVersion": 1,
   "result": "passed",
   "measured": true,
-  "timestamp": "2026-08-14T04:22:22.097Z",
-  "platform": "darwin",
-  "arch": "arm64",
-  "nodeVersion": "22.22.3",
+  "timestamp": "2026-08-14T06:55:15.978Z",
+  "platform": "win32",
+  "arch": "x64",
+  "nodeVersion": "24.12.0",
   "packageManager": "corepack pnpm@10.15.0",
-  "registry": "https://registry.npmmirror.com",
+  "registry": "https://registry.npmjs.org/",
   "profiles": {
     "checkout": {
       "id": "repository-checkout",
-      "bytes": 139890898,
-      "files": 4107,
+      "bytes": 144713749,
+      "files": 4234,
       "installedPackageCount": 121,
       "directDependencyCount": 64,
       "workspacePackageCount": 14
     },
     "coreChatClosure": {
-      "id": "darwin-chat-only",
+      "id": "win32-chat-only",
       "directDependencyCount": 18,
-      "bytes": 2345263,
-      "files": 335,
+      "bytes": 2443233,
+      "files": 372,
       "installedPackageCount": 20
     },
     "aggregate": {
       "package": "@deepseek-ai/dsh",
       "version": "0.1.0-rc.6",
       "directDependencyCount": 1,
-      "bytes": 253526108,
-      "files": 32237,
-      "installedPackageCount": 524
+      "bytes": 257006438,
+      "files": 32696,
+      "installedPackageCount": 523
     }
   }
 }

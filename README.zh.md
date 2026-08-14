@@ -153,6 +153,8 @@ Lite 负责配置、闭包生成、发布、插件和证据；官方包负责 ag
 
 Stable channel 在 [`compat/upstream-lock.json`](compat/upstream-lock.json) 中固定上游 `0.1.0-rc.6` 的完整包清单。生成的 closure 与 lock 覆盖 Windows、macOS、Linux 上的全部能力包组合。
 
+v0.1.0 release evidence 和五个 bundled plugin 记录统一绑定到 Lite source commit `573e77a16e58d9832f6dca282cac00f1dbde2cea`。之后的证据提交只记录生成结果，不改变这份已验证源码。
+
 兼容性是**经过 release gate 的尽力验证**，不是永久保证：
 
 - stable 使用已通过记录门禁的精确上游版本；
@@ -173,13 +175,13 @@ Release gate 包含名为 `keeps a native Windows absolute junction valid after 
 
 ## 安装体积证据
 
-仓库内的 clean measurement 来自 macOS arm64、Node.js `22.22.3` 和 pnpm `10.15.0`。这是单平台证据，不是通用体积承诺。
+仓库内的 clean measurement 来自 Windows x64、Node.js `24.12.0` 和 pnpm `10.15.0`。这是单平台证据，不是通用体积承诺。
 
 | 安装对象 | 字节数 | 文件数 | 已安装包数 | 直接依赖 | Workspaces |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Lite checkout（含构建/测试依赖） | 139,890,898 | 4,107 | 121 | 64 | 14 |
-| 生成的 `darwin-chat-only` closure | 2,345,263 | 335 | 20 | 18 | 不适用 |
-| 官方 `@deepseek-ai/dsh@0.1.0-rc.6` aggregate | 253,526,108 | 32,237 | 524 | 1 | 不适用 |
+| Lite checkout（含构建/测试依赖） | 144,713,749 | 4,234 | 121 | 64 | 14 |
+| 生成的 `win32-chat-only` closure | 2,443,233 | 372 | 20 | 18 | 不适用 |
+| 官方 `@deepseek-ai/dsh@0.1.0-rc.6` aggregate | 257,006,438 | 32,696 | 523 | 1 | 不适用 |
 
 [`compat/reports/install-size.json`](compat/reports/install-size.json) 是唯一数据来源。依赖图或测量方法变化后，重新运行 `corepack pnpm@10.15.0 measure:install`。
 

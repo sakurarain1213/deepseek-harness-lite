@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "channel": "stable",
   "evidenceKind": "release-gate",
-  "liteCommit": "2c8346eee9b0e3baf7b57cbb6f59fe12696d7c2a",
+  "liteCommit": "573e77a16e58d9832f6dca282cac00f1dbde2cea",
   "upstreamVersion": "0.1.0-rc.6",
-  "platform": "darwin",
-  "arch": "arm64",
-  "nodeVersion": "22.22.3",
+  "platform": "win32",
+  "arch": "x64",
+  "nodeVersion": "24.12.0",
   "packageManager": "pnpm@10.15.0",
   "selection": {
     "packs": [
@@ -84,100 +84,100 @@
     {
       "id": "install",
       "command": "CI=1 corepack pnpm@10.15.0 install --frozen-lockfile",
-      "startedAt": "2026-08-14T04:20:53.385Z",
-      "finishedAt": "2026-08-14T04:20:53.667Z",
-      "durationMs": 282,
+      "startedAt": "2026-08-14T06:46:02.596Z",
+      "finishedAt": "2026-08-14T06:46:03.533Z",
+      "durationMs": 937,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "test",
       "command": "corepack pnpm@10.15.0 test",
-      "startedAt": "2026-08-14T04:20:53.668Z",
-      "finishedAt": "2026-08-14T04:22:04.603Z",
-      "durationMs": 70935,
+      "startedAt": "2026-08-14T06:46:03.535Z",
+      "finishedAt": "2026-08-14T06:51:27.716Z",
+      "durationMs": 324181,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "typecheck",
       "command": "corepack pnpm@10.15.0 typecheck",
-      "startedAt": "2026-08-14T04:22:04.603Z",
-      "finishedAt": "2026-08-14T04:22:04.854Z",
-      "durationMs": 251,
+      "startedAt": "2026-08-14T06:51:27.716Z",
+      "finishedAt": "2026-08-14T06:51:28.260Z",
+      "durationMs": 544,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "lint",
       "command": "corepack pnpm@10.15.0 lint",
-      "startedAt": "2026-08-14T04:22:04.854Z",
-      "finishedAt": "2026-08-14T04:22:05.215Z",
-      "durationMs": 361,
+      "startedAt": "2026-08-14T06:51:28.260Z",
+      "finishedAt": "2026-08-14T06:51:29.274Z",
+      "durationMs": 1014,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "build",
       "command": "corepack pnpm@10.15.0 build",
-      "startedAt": "2026-08-14T04:22:05.215Z",
-      "finishedAt": "2026-08-14T04:22:05.456Z",
-      "durationMs": 241,
+      "startedAt": "2026-08-14T06:51:29.274Z",
+      "finishedAt": "2026-08-14T06:51:29.826Z",
+      "durationMs": 552,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "repository",
       "command": "corepack pnpm@10.15.0 verify:repo",
-      "startedAt": "2026-08-14T04:22:05.456Z",
-      "finishedAt": "2026-08-14T04:22:05.725Z",
-      "durationMs": 269,
+      "startedAt": "2026-08-14T06:51:29.826Z",
+      "finishedAt": "2026-08-14T06:51:30.621Z",
+      "durationMs": 795,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "secrets",
       "command": "corepack pnpm@10.15.0 check:secrets",
-      "startedAt": "2026-08-14T04:22:05.725Z",
-      "finishedAt": "2026-08-14T04:22:16.686Z",
-      "durationMs": 10961,
+      "startedAt": "2026-08-14T06:51:30.621Z",
+      "finishedAt": "2026-08-14T06:55:02.765Z",
+      "durationMs": 212144,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "licenses",
       "command": "corepack pnpm@10.15.0 check:licenses",
-      "startedAt": "2026-08-14T04:22:16.686Z",
-      "finishedAt": "2026-08-14T04:22:16.902Z",
-      "durationMs": 216,
+      "startedAt": "2026-08-14T06:55:02.765Z",
+      "finishedAt": "2026-08-14T06:55:03.338Z",
+      "durationMs": 573,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "compatibility",
       "command": "corepack pnpm@10.15.0 compat:check",
-      "startedAt": "2026-08-14T04:22:16.902Z",
-      "finishedAt": "2026-08-14T04:22:21.862Z",
-      "durationMs": 4960,
+      "startedAt": "2026-08-14T06:55:03.338Z",
+      "finishedAt": "2026-08-14T06:55:15.513Z",
+      "durationMs": 12175,
       "exitCode": 0,
       "result": "passed"
     },
     {
       "id": "install-size",
       "command": "corepack pnpm@10.15.0 measure:install",
-      "startedAt": "2026-08-14T04:22:21.862Z",
-      "finishedAt": "2026-08-14T04:22:40.435Z",
-      "durationMs": 18573,
+      "startedAt": "2026-08-14T06:55:15.513Z",
+      "finishedAt": "2026-08-14T06:57:46.238Z",
+      "durationMs": 150725,
       "exitCode": 0,
       "result": "passed"
     }
   ],
   "result": "passed",
   "measured": true,
-  "timestamp": "2026-08-14T04:22:40.435Z",
+  "timestamp": "2026-08-14T06:57:46.238Z",
   "limitations": [
     "This release gate records one native platform and architecture; it is not a universal compatibility claim.",
-    "Windows remains planned/experimental until its native CI lane is blocking and passes.",
+    "Windows support is release-gated by the blocking native CI lane; this local report does not replace that CI evidence.",
     "The real API smoke is a separate bounded maintainer check and is not run by public CI without credentials."
   ]
 }

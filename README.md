@@ -153,6 +153,8 @@ Lite owns configuration, closure generation, publication, plugins, and evidence.
 
 The stable channel pins the complete upstream `0.1.0-rc.6` package inventory in [`compat/upstream-lock.json`](compat/upstream-lock.json). Generated closures and locks cover every pack combination on Windows, macOS, and Linux.
 
+The v0.1.0 release evidence and all five bundled plugin records are bound to Lite source commit `573e77a16e58d9832f6dca282cac00f1dbde2cea`. The later evidence commit records generated results without changing that verified source.
+
 Compatibility is **best-effort and release-gated**, not permanent:
 
 - stable uses the exact upstream release that passed the recorded gates;
@@ -173,13 +175,13 @@ See [Windows support](docs/windows-roadmap.md) for the exact gates and platform 
 
 ## Install-size evidence
 
-The committed clean measurement was recorded on macOS arm64 with Node.js `22.22.3` and pnpm `10.15.0`. It is one-platform evidence, not a universal size promise.
+The committed clean measurement was recorded on Windows x64 with Node.js `24.12.0` and pnpm `10.15.0`. It is one-platform evidence, not a universal size promise.
 
 | Installation | Bytes | Files | Installed packages | Direct dependencies | Workspaces |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Lite checkout with build/test dependencies | 139,890,898 | 4,107 | 121 | 64 | 14 |
-| Generated `darwin-chat-only` closure | 2,345,263 | 335 | 20 | 18 | N/A |
-| Official `@deepseek-ai/dsh@0.1.0-rc.6` aggregate | 253,526,108 | 32,237 | 524 | 1 | N/A |
+| Lite checkout with build/test dependencies | 144,713,749 | 4,234 | 121 | 64 | 14 |
+| Generated `win32-chat-only` closure | 2,443,233 | 372 | 20 | 18 | N/A |
+| Official `@deepseek-ai/dsh@0.1.0-rc.6` aggregate | 257,006,438 | 32,696 | 523 | 1 | N/A |
 
 [`compat/reports/install-size.json`](compat/reports/install-size.json) is the source of truth. Run `corepack pnpm@10.15.0 measure:install` again whenever the dependency graph or measurement method changes.
 
