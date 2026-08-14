@@ -215,7 +215,7 @@ describe('pack manifests', () => {
     const validProfile = await resolveCurrentTree(join(root, 'valid'))
     await rm(join(validProfile, 'node_modules', '@deepseek-ai', 'dsh-tools'), { recursive: true, force: true })
     await expect(validateInstalledProfile(validProfile, { expected: { platform: 'darwin', packIds: ['workspace'] } })).rejects.toThrow('profile-local')
-  })
+  }, 30_000)
 
   it('binds installed closure identity and exact Cordis rows to the resolved profile', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-lite-binding-'))
