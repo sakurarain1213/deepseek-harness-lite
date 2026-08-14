@@ -89,7 +89,7 @@ async function installCheckout(directory, storeDirectory, cacheDirectory) {
     recursive: true,
     filter(source) {
       const path = relative(root, source)
-      return path === '' || !path.split('/').some(segment => excluded.has(segment) || segment.endsWith('.tsbuildinfo'))
+      return path === '' || !path.split(/[\\/]/).some(segment => excluded.has(segment) || segment.endsWith('.tsbuildinfo'))
     },
   })
   await executePackageManager([
