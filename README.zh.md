@@ -185,7 +185,7 @@ node "$LITE_REPO/apps/cli/dist/src/bin.js" run '用三点总结这个项目' --h
 | macOS Apple Silicon | 便携 `.tar.gz`、`.dmg` | Node.js 22.19.0 + Corepack |
 | Linux x64 | 便携 `.tar.gz` | Node.js 22.19.0 + Corepack |
 
-CI 会生成没有符号链接或本机绝对 junction 的部署目录，把它移动到 checkout 之外，再通过发布包启动器依次运行 `init`、`doctor` 和 `inspect`，全部通过才发布。附件包含中英文 README、示例、项目图片、MIT 许可证、NOTICE 和 SHA-256 校验文件。它们是 CLI 发行包，不是 GUI 应用，也不是单文件二进制程序。
+CI 会拒绝绝对链接、指回 checkout 的链接、越界链接和断链，把部署目录移动到 checkout 之外，再通过发布包启动器依次运行 `init`、`doctor` 和 `inspect`，全部通过才发布。附件包含中英文 README、示例、项目图片、MIT 许可证、NOTICE 和 SHA-256 校验文件。它们是 CLI 发行包，不是 GUI 应用，也不是单文件二进制程序。
 
 当前社区构建**没有代码签名**。Windows 安装器可能触发 SmartScreen；macOS 镜像没有 notarization，可能需要在“隐私与安全性”中手动允许。处理警告前，请先核对 SHA-256，并确认文件来自本仓库 Release 页面。
 

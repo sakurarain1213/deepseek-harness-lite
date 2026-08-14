@@ -185,7 +185,7 @@ Starting with v0.1.1, Release assets are produced and smoke-tested on their nati
 | macOS Apple Silicon | Portable `.tar.gz`, `.dmg` | Node.js 22.19.0 + Corepack |
 | Linux x64 | Portable `.tar.gz` | Node.js 22.19.0 + Corepack |
 
-CI prepares a link-free deployment, moves it away from the checkout, and runs `init`, `doctor`, and `inspect` through the packaged launcher before publishing it. The artifacts include both READMEs, examples, the project image, MIT license, NOTICE, and checksums. They are CLI distributions, not GUI apps or single-file binaries.
+CI rejects absolute, checkout-bound, escaping, or broken links, moves the deployment away from the checkout, and runs `init`, `doctor`, and `inspect` through the packaged launcher before publishing it. The artifacts include both READMEs, examples, the project image, MIT license, NOTICE, and checksums. They are CLI distributions, not GUI apps or single-file binaries.
 
 The current community builds are **not code-signed**. The Windows installer may trigger SmartScreen. The macOS images are not notarized and may require the user to approve the download in Privacy & Security. Do not bypass a warning before checking the SHA-256 checksum and confirming that the file came from this repository's Release page.
 

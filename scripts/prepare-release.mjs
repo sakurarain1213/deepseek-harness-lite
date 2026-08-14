@@ -1,5 +1,5 @@
-import { chmod, cp, lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { chmod, cp, lstat, mkdir, readFile, readdir, readlink, writeFile } from 'node:fs/promises'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 
@@ -61,12 +61,21 @@ async function copyNodeLicense(prefix, target) {
   throw new Error('the Node.js distribution license is unavailable; set NODE_RUNTIME_LICENSE to its path')
 }
 
-async function assertNoLinks(directory) {
+async function assertPortableLinks(directory, stageRoot = directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name)
     const stats = await lstat(path)
-    if (stats.isSymbolicLink()) throw new Error(`release staging contains a symbolic link: ${path}`)
-    if (entry.isDirectory()) await assertNoLinks(path)
+    if (stats.isSymbolicLink()) {
+      const target = await readlink(path)
+      const resolvedTarget = resolve(dirname(path), target)
+      const relativeTarget = relative(stageRoot, resolvedTarget)
+      if (isAbsolute(target) || relativeTarget === '..' || relativeTarget.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`)) {
+        throw new Error(`release staging contains a non-portable link: ${path}`)
+      }
+      await lstat(resolvedTarget).catch(() => { throw new Error(`release staging contains a broken link: ${path}`) })
+    } else if (entry.isDirectory()) {
+      await assertPortableLinks(path, stageRoot)
+    }
   }
 }
 
@@ -110,5 +119,5 @@ if (process.platform === 'win32') {
   await chmod(join(stage, 'dsh-lite'), 0o755)
 }
 
-await assertNoLinks(stage)
+await assertPortableLinks(stage)
 process.stdout.write(`prepared ${stage}\n`)

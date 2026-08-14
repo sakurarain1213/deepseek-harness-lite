@@ -77,22 +77,22 @@ jobs:
         shell: pwsh
         run: |
           $stage = "$env:RUNNER_TEMP\deepseek-harness-lite-v$env:VERSION-$env:PLATFORM-$env:ARCH"
-          $home = "$env:RUNNER_TEMP\dsh-lite-home"
-          & "$stage\dsh-lite.cmd" init --config "$stage\examples\chat-only\lite.config.json" --home $home
+          $profileRoot = "$env:RUNNER_TEMP\dsh-lite-home"
+          & "$stage\dsh-lite.cmd" init --config "$stage\examples\chat-only\lite.config.json" --home $profileRoot
           if ($LASTEXITCODE -ne 0) { throw "init exited with $LASTEXITCODE" }
-          & "$stage\dsh-lite.cmd" doctor --home $home
+          & "$stage\dsh-lite.cmd" doctor --home $profileRoot
           if ($LASTEXITCODE -ne 0) { throw "doctor exited with $LASTEXITCODE" }
-          & "$stage\dsh-lite.cmd" inspect --home $home
+          & "$stage\dsh-lite.cmd" inspect --home $profileRoot
           if ($LASTEXITCODE -ne 0) { throw "inspect exited with $LASTEXITCODE" }
       - name: Smoke test installed artifact (Unix)
         if: matrix.platform != 'windows'
         shell: bash
         run: |
           stage="$RUNNER_TEMP/deepseek-harness-lite-v${VERSION}-${PLATFORM}-${ARCH}"
-          home="$RUNNER_TEMP/dsh-lite-home"
-          "$stage/dsh-lite" init --config "$stage/examples/chat-only/lite.config.json" --home "$home"
-          "$stage/dsh-lite" doctor --home "$home"
-          "$stage/dsh-lite" inspect --home "$home"
+          profile_root="$RUNNER_TEMP/dsh-lite-home"
+          "$stage/dsh-lite" init --config "$stage/examples/chat-only/lite.config.json" --home "$profile_root"
+          "$stage/dsh-lite" doctor --home "$profile_root"
+          "$stage/dsh-lite" inspect --home "$profile_root"
       - name: Package Windows ZIP and installer
         if: matrix.platform == 'windows'
         shell: pwsh
